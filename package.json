@@ -1,0 +1,33 @@
+{
+  "name": "datdot-ui-autocomplete",
+  "version": "0.0.0",
+  "description": "Search swarm key by autocomplete ",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "budo demo/demo.js:bundle.js --open --live",
+    "build": "browserify demo/demo.js -o bundle.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fionataeyang/datdot-ui-autocomplete.git"
+  },
+  "keywords": [
+    "datdot ui",
+    "search",
+    "autocomplete"
+  ],
+  "author": "fionataeyang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/fionataeyang/datdot-ui-autocomplete/issues"
+  },
+  "homepage": "https://github.com/fionataeyang/datdot-ui-autocomplete#readme",
+  "dependencies": {
+    "bel": "^6.0.0",
+    "budo": "^11.6.4",
+    "csjs-inject": "^1.0.1",
+    "datdot-ui-button": "github:fionataeyang/datdot-ui-button",
+    "datdot-ui-graphic": "github:fionataeyang/datdot-ui-graphic"
+  }
+}
