@@ -1,0 +1,61 @@
+[{
+    "id": 1,
+    "type": "hypercore",
+    "swarm": "1FXEYVsMeAyzBKW4ithcFitAgCbX",
+    "feeds": [
+      "2FXEYVsMeAyzBrYJnK7aW4hcFitAgCbX"
+    ]
+  },{
+    "id": 2,
+    "type": "hyperdrive",
+    "swarm": "3PF9D4E7XzwcmxB8SW8GwSwCnMjV",
+    "feeds": [
+      "https://playproject.io", 
+      "https://twitter.com/playproject_io"
+    ],
+    "links": [4]
+  },{
+    "id": 3,
+    "type": "cabal",
+    "swarm": "my-chat-server",
+    "feeds": [
+      "CFXEYVsMeAyzBrnK7aW4ithcFitAgCbX", 
+      "dELcPjxVtKX6pYXCiwRBFmW3EhEWfMY5", 
+      "jPF9D4E7XzwcmxBjwtD8SW8GwSwCnMjV", 
+      "KFXEYVsMeAyzBrnK7aW4ithcFitAgCbX"
+    ]
+  },{
+    "id": 4,
+    "type": "hyperdrive",
+    "swarm": "39cfa43b09e3695e60a48135de728f74c2909f91",
+    "feeds": [
+      "2FXEYVsMeAyzBJnK7aW4ithcFitAgCbX", 
+      "3ELcPjxVtKXYXdUCiwRBFmW3EhEWfMY5"
+    ],
+    "links": [5]
+  },{
+    "id": 5,
+    "type": "hyperdrive",
+    "swarm": "1PF9D4E7XzmxyMBjSW8GwSwCnMjV",
+    "feeds": [
+      "1FXEYVsMeAyzBrYJ7aW4ithcFitAgCbX", 
+      "1ELcPjxVtKX6pYXdUwRBFmW3EhEWfMY5"
+    ],
+    "links": [6, 7]
+  },{
+    "id": 6,
+    "type": "hyperdrive",
+    "swarm": "939bb46a04c3640c8c427e92b1b557e882e2d2a0",
+    "feeds": [
+      "1FXEYVsMeAyzBrYK7aW4ithcFitAgCbX", 
+      "1ELcPjxVtKX6pYUCiwRBFmW3EhEWfMY5"
+    ]
+  },{
+    "id": 7,
+    "type": "hyperdrive",
+    "swarm": "337f64e7eeab4997ef3783f8534f6729dbe5c549",
+    "feeds": [
+      "https://playproject.io/", 
+      "https://twitter.com/playproject_io"
+    ]
+  }]

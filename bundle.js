@@ -10,9 +10,10 @@ function demoComponent () {
     let count = 1
     let number = 0
     let recipients = []
+    let result = fetchData('./src/data.json')
     // logs
     const terminal = bel`<div class=${css.terminal}></div>`
-    const searchBox = autocomplete({page: 'PLANS', name: 'swarm key'}, protocol('swarmkey'))
+    const searchBox = autocomplete({page: 'PLANS', name: 'swarm key', data: result }, protocol('swarmkey'))
     const element = bel`
     <div class=${css.wrap}>
         <div class=${css.container}>${searchBox}</div>
@@ -29,7 +30,9 @@ function demoComponent () {
 
     function receive (message) {
         const { page, from, flow, type, action, body, filename, line } = message
-        if ( type === 'click') console.log(from, message);
+        // console.log(`DEMO <= ${page}/${from} ${type}` );
+        // if ( type === 'click') console.log(from, message);
+        if ( type === 'clear-search') console.log( message );
         domlog(message)
     }
 
@@ -38,13 +41,32 @@ function demoComponent () {
         const log = bel`
         <div class=${css.log} role="log">
             <div class=${css.badge}>${count}</div>
-            <div class=${css.output}>${page}/${flow}: ${from} ${type} ${body}</div>
+            <div class="${css.output} ${type === 'error' ? css.error : '' }">
+                <span class=${css.page}>${page}</span> 
+                <span class=${css.flow}>${flow}</span>
+                <span class=${css.from}>${from}</span>
+                <span class=${css.type}>${type}</span>
+                <span class=${css.info}>${typeof body === 'string' ? body : JSON.stringify(body, ["swarm", "feeds", "links"], 3)}</span>
+            </div>
             <div class=${css['code-line']}>${filename}:${line}</div>
         </div>`
         // console.log( message )
         terminal.append(log)
         terminal.scrollTop = terminal.scrollHeight
         count++
+    }
+
+    async function fetchData (path) {
+        const response = await fetch(path)
+        try {
+            if ( response.ok ) return response.json().then(data => data)
+            if ( response.status === 404 ) 
+                domlog({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 54})
+                throw new Error(`Failed load file from ${response.url}`)
+        } catch (e) {
+            console.log(e.message)
+        }
+       
     }
 }
 
@@ -72,7 +94,7 @@ body {
     font-size: 13px;
     overflow-y: auto;
 }
-.log:last-child {
+.log:last-child, .log:last-child .page, .log:last-child .flow, .log:last-child .type {
     color: #FFF500;
     font-weight: bold;
 }
@@ -95,6 +117,26 @@ body {
     display: inline-block;
 }
 .code-line {}
+.error {
+    color: #FF3F3F;
+}
+.page {
+    display: inline-block;
+    color: rgba(255,255,255,.75);
+    background-color: #2A2E30;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+.flow {
+    color: #1DA5FF;
+}
+.from {
+    color: #fff;
+}
+.type {
+    color: #FFB14A;
+}
+.info {}
 `
 
 document.body.append( demoComponent() )
@@ -1957,99 +1999,169 @@ const path = require('path')
 const filename = path.basename(__filename)
 const button = require('datdot-ui-button')
 const svg = require('datdot-ui-graphic')
+const searchResult = require('search-result')
 
 module.exports = autocomplete
 
-function autocomplete ({page, name}, protocol) {
+function autocomplete ({page, name, data}, protocol) {
     const widget = 'ui-autocomplete'
     let receipients = []
+    let result = []
     let val
     const send2Parent = protocol( receive )
     const iconClear = svg({css: `${css.icon} ${css['icon-clear']}`, path: 'assets/cancel.svg'})
     const clear = button({page, name: 'clear', content: iconClear, style: ['circle-solid', 'small'], color: 'light-grey', custom: [css.clear]}, clearProtocol('clear'))
-    send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 11})
-
     const input = bel`<input type="text" class=${css['search-input']} name=${name} role="search input" aria-label="search input" tabindex=0>`
     const controlForm = bel`<div class=${css['control-form']}>${input}</div>`
-    const search = bel`<div class=${css.search} onclick=${handleClick}>${controlForm}</div>`
+    const list = searchResult({page, name: 'swarm', data}, searchResultProtocol('swarm-key-result'))
+    const search = bel`<div role="search" class=${css.search} aria-label="search">${controlForm}${list}</div>`
 
-    search.onclick = handleClick
+    send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 24})
+    
+    // search.onclick = handleClick
     input.onfocus = handleFocus
     input.onblur = handleBlur
     input.onchange = handleChange
-    input.onkeypress = handleKey
     input.onkeyup = handleKey
 
     return search
 
-    function clearProtocol (name) {
+    function publish (string) {
+        list.classList.add(css.hide)
+        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 36 })
+    }
+
+    function searchFilter (string) {
+        // filter characters are matched with swarm key
+        let searchString = string.toLowerCase()
+        data.then( args => { 
+            let arr = args.filter( item => {
+                let swarm = item.swarm.toLowerCase()
+                return item.type.includes(searchString) || swarm.includes( searchString ) || swarm.includes( searchString.split('://')[1] )
+            })
+            if ( arr.length === 0 ) return publish(string)
+            list.classList.remove(css.hide)
+            return receipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: arr})
+        })
+    }
+
+    function statusElementRemove () {
+        const statusElement = controlForm.querySelector(`.${css.status}`)
+        if (statusElement) {
+            statusElement.remove()
+            controlForm.classList.remove(css.selected)
+            search.append(list)
+        }
+    }
+
+    function selectSwarmAction (obj) {
+        const { swarm, isValid } = obj
+        const type = obj.type === 'hypercore' ? 'core' : obj.type === 'hyperdrive' ? 'drive' : 'cabal'
+        const span = bel`<span class="${css.status}${isValid ? ` ${css.isValid}` : '' }">`
+        const statusElement = controlForm.querySelector(`.${css.status}`)
+        input.value = `${type}://${swarm}`
+        if ( statusElement ) statusElement.remove()
+        controlForm.classList.add(css.selected)
+        controlForm.insertBefore(span, input)
+        controlForm.append(clear)
+        list.remove()
+        send2Parent({page, from: 'feeds list', flow: widget, type: 'selected', body: obj, filename, line: 73})
+    }
+
+    function searchResultProtocol (name) {
         return send => {
             receipients[name] = send
-            return function clearReceive (message) {
-                const { page, from, flow, type, action, body, filename, line } = message
+            return function receiveSearchResult (message) {
+                const { page, from, flow, type, body } = message
+                if (type === 'click') selectSwarmAction(body)
             }
         }
     }
 
-    function handleClearInput (event) {
-        const target = event.target
-        val = ''
-        input.value = val
-        target.classList.toggle(css.hide)
-        setTimeout(()=> {
-            event.target.remove()
-            target.classList.toggle(css.hide)
-        }, 300)
-        
+    function clearProtocol (name) {
+        return send => {
+            receipients[name] = send
+            return function receiveClear (message) {
+                const { page, from, flow, type, action, body, filename, line } = message
+                // received message from clear button
+                if (type === 'click') handleClearSearch(name)
+            }
+        }
     }
 
+    function handleClearSearch (name) {
+        val = ''
+        input.value = val
+        clear.classList.toggle(css.hide)
+        // list.classList.remove(css.hide)
+        setTimeout(()=> {
+            clear.classList.toggle(css.hide)
+            clear.remove()
+        }, 300)
+        statusElementRemove()
+        send2Parent({page, from: name, flow: widget, type: 'clear search', body: val, filename, line: 107})
+        receipients['swarm-key-result']({page, from: name, type: 'clear', body: data})
+    }
 
     function handleClick (event) {
         const target = event.target
-        if ( target.tagName === 'INPUT' ) send2Parent({page, from: target.name, flow: widget, body: target.value, type: 'click', filename, line: 39})
-        if ( target.tagName === 'BUTTON') handleClearInput(event)
+        if ( target.tagName === 'INPUT' ) send2Parent({page, from: target.name, flow: widget, body: target.value, type: 'click', filename, line: 113})
+        // if ( target.tagName === 'BUTTON') handleClearSearch(event)
     }
 
     function handleKey (event) {
         const target = event.target
         val = target.value
-        if ( !controlForm.querySelector(`.${css.clear}`) ) { 
-            controlForm.append(clear)
+        if ( !controlForm.querySelector(`.${css.clear}`) ) controlForm.append(clear)
+        if (val === '' ) {
+            controlForm.removeChild(clear)
+            statusElementRemove()
         }
-        if (val === '' ) controlForm.removeChild(clear)
+        searchFilter(val)
+        send2Parent({page, from: target.name, flow: widget, type: 'keyup', body: val, filename, line: 126})
     }
 
     function handleBlur (event) {
         const target = event.target
-        send2Parent({page, from: target.name, flow: widget, type: 'blur', body: target.value, filename, line: 44})
+        send2Parent({page, from: target.name, flow: widget, type: 'blur', body: val, filename, line: 131})
     }
 
     function handleFocus (event) {
         const target = event.target
-        send2Parent({page, from: target.name, flow: widget, type: 'focus', body: target.value, filename, line: 49})
+        send2Parent({page, from: target.name, flow: widget, type: 'focus', body: val, filename, line: 136})
     }
 
     function handleChange (event) {
         const target = event.target
-        send2Parent({page, from: target.name, flow: widget, type: 'change', body: target.value, filename, line: 54})
+        val = target.value
+        send2Parent({page, from: target.name, flow: widget, type: 'change', body: val, filename, line: 142})
     }
 
     function receive (message) {
         const {page, from, type, action, body} = message
+        // console.log(`${page} => ${widget} ${type}`);
     }
 }
 
 const css = csjs`
-.search {}
+.search {
+    position: relative;
+}
 .control-form {
     display: grid;
-    grid-template: auto / 1fr 30px;
+    grid-template-rows: auto;
+    grid-template-columns: 1fr 30px;
     background-color: #fff;
     border-radius: 8px;
     align-items: center;
     padding-left: 10px;
 }
+.selected {
+    grid-template-columns: 20px 1fr 30px;
+}
 .search-input {
+    width: 100%;
+    font-size: 14px;
     border: none;
     outline: none;
     padding: 14px 0;
@@ -2064,6 +2176,16 @@ const css = csjs`
 .icon {}
 .icon-clear {
     pointer-events: none;
+}
+.status {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-color: #D9D9D9;
+    border-radius: 50px;
+}
+.isValid {
+    background-color: #109B36;
 }
 @keyframes showup {
     0% {
@@ -2083,4 +2205,145 @@ const css = csjs`
 }
 `
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"datdot-ui-button":25,"datdot-ui-graphic":26,"path":30}]},{},[1]);
+},{"bel":3,"csjs-inject":6,"datdot-ui-button":25,"datdot-ui-graphic":26,"path":30,"search-result":33}],33:[function(require,module,exports){
+const bel = require('bel')
+const csjs = require('csjs-inject')
+
+module.exports = searchResult
+
+function searchResult ({page, name = 'search result', data}, protocol) {
+    const widget = 'ui-swarm-list'
+    const send2Parent = protocol( receive )
+    const ul = bel`<ul role="feeds" class=${css.feeds}></ul>`
+    const feedsTotal  = bel`<span class=${css.feedsTotal}></span>`
+    const searchFooter = bel`<div class=${css['search-footer']}>${feedsTotal}</div>`
+    const content = bel`<div class=${css.content}>${ul}</div>` 
+    const element = bel`<div class=${css.result}>${content}${searchFooter}</div>`
+
+    renderList(data)
+    send2Parent({page, from: name, flow: widget, type: 'init'})
+
+    return element
+
+    function click (obj) {
+        return send2Parent({page, from: name, flow: widget, type: 'click', body: obj})
+    }
+
+    function renderList (promise) {
+        ul.innerHTML = ''
+        return promise.then( args => {
+            list(args)
+        })
+    }
+
+    function filterList (data) {
+        ul.innerHTML = ''
+        return list(data)
+    }
+
+    function list (args) {
+        let len = `${args.length} feeds` 
+        feedsTotal.innerText = len
+        return args.map( obj => {     
+            const type = obj.type === 'hypercore' ? 'core' : obj.type === 'hyperdrive' ? 'drive' : 'cabal'
+            let li = bel`
+            <li role=${obj.type} arial-label="${obj.swarm}" onclick=${ () => click({...obj, isValid: isValidFeeds(obj.feeds)}) }>
+                <span class="${css.status}${isValidFeeds(obj.feeds) ? ` ${css.isValid}` : ''}"></span>
+                <span class="${css.badge} ${css[type]}">${type}</span>
+                <span class=${css.feed}>${obj.swarm}</span>
+            </li>`
+            ul.append(li)
+            content.append(ul)
+        })
+    }
+
+    function publish (key) {
+        console.log('publish new swarm', key);
+    }
+
+    // TODO: wait to make a isValid feed
+    function isValidFeeds (feeds) {
+        return feeds.some( feed => feed.match(/https/ig) )
+    }
+
+    function receive (message) {
+        const { page, from, type, action, body} = message
+        if (type === 'clear') renderList(body)
+        if (type === 'filter') filterList(body)
+        if (type === 'not found') publish(body)
+    }
+}
+
+const css = csjs`
+.result {
+    position: absolute;
+    width: 100%;
+    height: 360px;
+    z-index: 9;
+    left: 0;
+    top: 47px;
+    display: grid;
+    grid-template-rows: 1fr 27px;
+    grid-template-columns: auto; 
+    border-radius: 8px;
+    background-color: #fff;
+}
+.content {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+.search-footer {
+    font-size: 12px;
+    line-height: 27px;
+    text-align: right;
+    color: #fff;
+    background-color: #4B4B4B;
+    padding: 0 10px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.feeds {
+    margin: 10px 0 0 0;
+    padding: 0;
+}
+.feeds li {
+    padding: 8px 10px;
+    line-height: 16px;
+    cursor: pointer;
+    transition: background-color 0.45s ease-in-out;
+}
+.feeds li:hover {
+    background-color: #F5F5F5;
+}
+.status {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-color: #D9D9D9;
+    border-radius: 50px;
+    margin-right: 10px;
+}
+.isValid {
+    background-color: #109B36;
+}
+.badge {
+    border-radius: 10px;
+    padding: 2px 8px;
+    text-align: center;
+    margin-right: 5px;
+}
+.core {
+    background-color: #BCE0FD;
+}
+.drive {
+    background-color: #FFDFA2;
+}
+.cabal {
+    background-color: #E9D3FF;
+}
+.feed {}
+.hide {
+    display: none;
+}
+`
+},{"bel":3,"csjs-inject":6}]},{},[1]);

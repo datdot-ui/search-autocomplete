@@ -8,9 +8,10 @@ function demoComponent () {
     let count = 1
     let number = 0
     let recipients = []
+    let result = fetchData('./src/data.json')
     // logs
     const terminal = bel`<div class=${css.terminal}></div>`
-    const searchBox = autocomplete({page: 'PLANS', name: 'swarm key'}, protocol('swarmkey'))
+    const searchBox = autocomplete({page: 'PLANS', name: 'swarm key', data: result }, protocol('swarmkey'))
     const element = bel`
     <div class=${css.wrap}>
         <div class=${css.container}>${searchBox}</div>
@@ -27,7 +28,9 @@ function demoComponent () {
 
     function receive (message) {
         const { page, from, flow, type, action, body, filename, line } = message
-        if ( type === 'click') console.log(from, message);
+        // console.log(`DEMO <= ${page}/${from} ${type}` );
+        // if ( type === 'click') console.log(from, message);
+        if ( type === 'clear-search') console.log( message );
         domlog(message)
     }
 
@@ -36,13 +39,32 @@ function demoComponent () {
         const log = bel`
         <div class=${css.log} role="log">
             <div class=${css.badge}>${count}</div>
-            <div class=${css.output}>${page}/${flow}: ${from} ${type} ${body}</div>
+            <div class="${css.output} ${type === 'error' ? css.error : '' }">
+                <span class=${css.page}>${page}</span> 
+                <span class=${css.flow}>${flow}</span>
+                <span class=${css.from}>${from}</span>
+                <span class=${css.type}>${type}</span>
+                <span class=${css.info}>${typeof body === 'string' ? body : JSON.stringify(body, ["swarm", "feeds", "links"], 3)}</span>
+            </div>
             <div class=${css['code-line']}>${filename}:${line}</div>
         </div>`
         // console.log( message )
         terminal.append(log)
         terminal.scrollTop = terminal.scrollHeight
         count++
+    }
+
+    async function fetchData (path) {
+        const response = await fetch(path)
+        try {
+            if ( response.ok ) return response.json().then(data => data)
+            if ( response.status === 404 ) 
+                domlog({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 54})
+                throw new Error(`Failed load file from ${response.url}`)
+        } catch (e) {
+            console.log(e.message)
+        }
+       
     }
 }
 
@@ -70,7 +92,7 @@ body {
     font-size: 13px;
     overflow-y: auto;
 }
-.log:last-child {
+.log:last-child, .log:last-child .page, .log:last-child .flow, .log:last-child .type {
     color: #FFF500;
     font-weight: bold;
 }
@@ -93,6 +115,26 @@ body {
     display: inline-block;
 }
 .code-line {}
+.error {
+    color: #FF3F3F;
+}
+.page {
+    display: inline-block;
+    color: rgba(255,255,255,.75);
+    background-color: #2A2E30;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+.flow {
+    color: #1DA5FF;
+}
+.from {
+    color: #fff;
+}
+.type {
+    color: #FFB14A;
+}
+.info {}
 `
 
 document.body.append( demoComponent() )
