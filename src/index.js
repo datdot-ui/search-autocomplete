@@ -42,7 +42,7 @@ function autocomplete ({page, name, data}, protocol) {
         data.then( args => { 
             let arr = args.filter( item => {
                 let swarm = item.swarm.toLowerCase()
-                return item.type.includes(searchString) || swarm.includes( searchString ) || swarm.includes( searchString.split('://')[1] )
+                return item.type.includes(searchString) || swarm.includes( searchString ) || item.type.includes(searchString.split('://')[0]) && swarm.includes( searchString.split('://')[1] )
             })
             if ( arr.length === 0 ) return publish(string)
             list.classList.remove(css.hide)

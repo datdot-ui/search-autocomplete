@@ -58,4 +58,26 @@
       "https://playproject.io/", 
       "https://twitter.com/playproject_io"
     ]
+  },
+  {
+    "id": 8,
+    "type": "cabal",
+    "swarm": "03bf5d29ca68766e49bdb6864d625b526528d8f1d",
+    "feeds": [
+      "1KZTrVyaUgip28wx1gNRygWUNyuh9EdkrJ", 
+      "16EnSGWQTFSWqfxyrECSUTmrLdYswuKZLy", 
+      "14SwQNaaeu6ucK9MttfU9WN9eZGU7VGf63", 
+      "14zZPoM6JMDe8M6jAK2YzdS3w32r5E5Yvo",
+      "https://datdot.org"
+    ]
+  },
+  {
+    "id": 9,
+    "type": "hypercore",
+    "swarm": "1FXEYVsMeAyzBKW4ithcFitAgCbX",
+    "feeds": [
+      "1j9s63ZEMR39z9bURWZYt1Lt6XF6PSaRh",
+      "1BqhbFcFmjMknxYXDf4y41qCb9MyCQ3hJS",
+      "1HsB7R23LnUxRLgo67tSQsiEFPRdJsyJGe"
+    ]
   }]
