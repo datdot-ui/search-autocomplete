@@ -10,16 +10,20 @@ module.exports = autocomplete
 
 function autocomplete ({page, name, data}, protocol) {
     const widget = 'ui-autocomplete'
-    let receipients = []
-    let result = []
+    let recipients = []
     let val
     const send2Parent = protocol( receive )
     const iconClear = svg({css: `${css.icon} ${css['icon-clear']}`, path: 'assets/cancel.svg'})
+    const iconOption = svg({css: `${css.icon} ${css['icon-option']}`, path: 'assets/option.svg'})
     const clear = button({page, name: 'clear', content: iconClear, style: ['circle-solid', 'small'], color: 'light-grey', custom: [css.clear]}, clearProtocol('clear'))
     const input = bel`<input type="text" class=${css['search-input']} name=${name} role="search input" aria-label="search input" tabindex=0>`
     const controlForm = bel`<div class=${css['control-form']}>${input}</div>`
     const list = searchResult({page, name: 'swarm', data}, searchResultProtocol('swarm-key-result'))
     const search = bel`<div role="search" class=${css.search} aria-label="search">${controlForm}${list}</div>`
+    // option dropdown
+    const option = button({page, name: 'option', content: iconOption, style: 'default', color: 'fill-grey', custom: [css.option]}, optionProtocol('option'))
+    const action = bel`<aside class=${css.action}>${option}</aside>`
+    list.append(action)
 
     send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 24})
     
@@ -33,7 +37,7 @@ function autocomplete ({page, name, data}, protocol) {
 
     function publish (string) {
         list.classList.add(css.hide)
-        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 36 })
+        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 37 })
     }
 
     function searchFilter (string) {
@@ -46,7 +50,7 @@ function autocomplete ({page, name, data}, protocol) {
             })
             if ( arr.length === 0 ) return publish(string)
             list.classList.remove(css.hide)
-            return receipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: arr})
+            return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: arr})
         })
     }
 
@@ -75,7 +79,7 @@ function autocomplete ({page, name, data}, protocol) {
 
     function searchResultProtocol (name) {
         return send => {
-            receipients[name] = send
+            recipients[name] = send
             return function receiveSearchResult (message) {
                 const { page, from, flow, type, body } = message
                 if (type === 'click') selectSwarmAction(body)
@@ -83,9 +87,24 @@ function autocomplete ({page, name, data}, protocol) {
         }
     }
 
+    function optionProtocol (name) {
+        return send => {
+            recipients[name] = send
+            return function receiveOption (message) {
+                const { page, from, flow, type, action, body, filename, line } = message
+                // received message from clear button
+                if (type === 'click') handleOption(name)
+            }
+        }
+    }
+
+    function handleOption (name) {
+        send2Parent({page, from: name, flow: widget, type: 'click', filename, line: 100})
+    }
+
     function clearProtocol (name) {
         return send => {
-            receipients[name] = send
+            recipients[name] = send
             return function receiveClear (message) {
                 const { page, from, flow, type, action, body, filename, line } = message
                 // received message from clear button
@@ -105,7 +124,7 @@ function autocomplete ({page, name, data}, protocol) {
         }, 300)
         statusElementRemove()
         send2Parent({page, from: name, flow: widget, type: 'clear search', body: val, filename, line: 107})
-        receipients['swarm-key-result']({page, from: name, type: 'clear', body: data})
+        recipients['swarm-key-result']({page, from: name, type: 'clear', body: data})
     }
 
     function handleClick (event) {
@@ -191,6 +210,21 @@ const css = csjs`
 }
 .isValid {
     background-color: #109B36;
+}
+.action {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+}
+.option {
+    transition: background-color 0.4s ease-in-out;
+    padding: 7px 10px;
+}
+.option:hover {
+    background-color: #000;
+}
+.icon-option {
+    width: 24px;
 }
 @keyframes showup {
     0% {

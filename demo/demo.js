@@ -3,21 +3,31 @@ const csjs = require('csjs-inject')
 const path = require('path')
 const filename = path.basename(__filename)
 const autocomplete = require('..')
+const domlog = require('ui-domlog')
 
 function demoComponent () {
     let count = 1
     let number = 0
     let recipients = []
     let result = fetchData('./src/data.json')
-    // logs
+    // show logs
     const terminal = bel`<div class=${css.terminal}></div>`
     const searchBox = autocomplete({page: 'PLANS', name: 'swarm key', data: result }, protocol('swarmkey'))
-    const element = bel`
-    <div class=${css.wrap}>
-        <div class=${css.container}>${searchBox}</div>
-        ${terminal}
-    </div>`
-    return element
+    // container
+    const container = wrap(searchBox, terminal)
+    return container
+
+    function wrap (content) {
+        const container = bel`
+        <div class=${css.wrap}>
+            <section class=${css.container}>
+                ${content}
+            </section>
+            ${terminal}
+        </div>
+        `
+        return container
+    }
 
     function protocol (name) {
         return send => {
@@ -29,46 +39,40 @@ function demoComponent () {
     function receive (message) {
         const { page, from, flow, type, action, body, filename, line } = message
         // console.log(`DEMO <= ${page}/${from} ${type}` );
-        // if ( type === 'click') console.log(from, message);
-        if ( type === 'clear-search') console.log( message );
-        domlog(message)
-    }
-
-    function domlog (message) {
-        const { page, from, flow, type, body, action, filename, line } = message
-        const log = bel`
-        <div class=${css.log} role="log">
-            <div class=${css.badge}>${count}</div>
-            <div class="${css.output} ${type === 'error' ? css.error : '' }">
-                <span class=${css.page}>${page}</span> 
-                <span class=${css.flow}>${flow}</span>
-                <span class=${css.from}>${from}</span>
-                <span class=${css.type}>${type}</span>
-                <span class=${css.info}>${typeof body === 'string' ? body : JSON.stringify(body, ["swarm", "feeds", "links"], 3)}</span>
-            </div>
-            <div class=${css['code-line']}>${filename}:${line}</div>
-        </div>`
-        // console.log( message )
-        terminal.append(log)
-        terminal.scrollTop = terminal.scrollHeight
-        count++
+        sendMessage(message).then( log => {
+            terminal.append(log) 
+            terminal.scrollTop = terminal.scrollHeight
+        })
     }
 
     async function fetchData (path) {
-        const response = await fetch(path)
-        try {
-            if ( response.ok ) return response.json().then(data => data)
-            if ( response.status === 404 ) 
-                domlog({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 54})
-                throw new Error(`Failed load file from ${response.url}`)
-        } catch (e) {
-            console.log(e.message)
+        const response = await fetch(path)  
+        if ( response.ok ) return response.json().then(data => data)
+        if ( response.status === 404 ) {
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 54})
+            .then( log => terminal.append(log) )
+            // throw new Error(`Failed load file from ${response.url}`)
         }
-       
+    }
+
+    async function sendMessage (message) {
+        return await new Promise( (resolve, reject) => {
+            if (message === undefined) reject('no message import')
+            const log = domlog(message)
+            return resolve(log)
+        }).catch( err => { 
+            throw new Error(err.message) 
+        })
     }
 }
 
 const css = csjs`
+html {
+    box-sizing: border-box;
+}
+*, *::before, *::after {
+    box-sizing: inherit;
+}
 body {
     margin: 0;
     padding: 0;
@@ -92,49 +96,6 @@ body {
     font-size: 13px;
     overflow-y: auto;
 }
-.log:last-child, .log:last-child .page, .log:last-child .flow, .log:last-child .type {
-    color: #FFF500;
-    font-weight: bold;
-}
-.log {
-    display: grid;
-    grid-template-rows: auto;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    padding: 2px 12px 0 0;
-    border-bottom: 1px solid #333;
-}
-.output {
-
-}
-.badge {
-    background-color: #333;
-    padding: 6px;
-    margin-right: 10px;
-    font-size: 14px;
-    display: inline-block;
-}
-.code-line {}
-.error {
-    color: #FF3F3F;
-}
-.page {
-    display: inline-block;
-    color: rgba(255,255,255,.75);
-    background-color: #2A2E30;
-    padding: 4px 6px;
-    border-radius: 4px;
-}
-.flow {
-    color: #1DA5FF;
-}
-.from {
-    color: #fff;
-}
-.type {
-    color: #FFB14A;
-}
-.info {}
 `
 
 document.body.append( demoComponent() )

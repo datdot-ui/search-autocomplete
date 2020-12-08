@@ -5,21 +5,31 @@ const csjs = require('csjs-inject')
 const path = require('path')
 const filename = path.basename(__filename)
 const autocomplete = require('..')
+const domlog = require('ui-domlog')
 
 function demoComponent () {
     let count = 1
     let number = 0
     let recipients = []
     let result = fetchData('./src/data.json')
-    // logs
+    // show logs
     const terminal = bel`<div class=${css.terminal}></div>`
     const searchBox = autocomplete({page: 'PLANS', name: 'swarm key', data: result }, protocol('swarmkey'))
-    const element = bel`
-    <div class=${css.wrap}>
-        <div class=${css.container}>${searchBox}</div>
-        ${terminal}
-    </div>`
-    return element
+    // container
+    const container = wrap(searchBox, terminal)
+    return container
+
+    function wrap (content) {
+        const container = bel`
+        <div class=${css.wrap}>
+            <section class=${css.container}>
+                ${content}
+            </section>
+            ${terminal}
+        </div>
+        `
+        return container
+    }
 
     function protocol (name) {
         return send => {
@@ -31,46 +41,40 @@ function demoComponent () {
     function receive (message) {
         const { page, from, flow, type, action, body, filename, line } = message
         // console.log(`DEMO <= ${page}/${from} ${type}` );
-        // if ( type === 'click') console.log(from, message);
-        if ( type === 'clear-search') console.log( message );
-        domlog(message)
-    }
-
-    function domlog (message) {
-        const { page, from, flow, type, body, action, filename, line } = message
-        const log = bel`
-        <div class=${css.log} role="log">
-            <div class=${css.badge}>${count}</div>
-            <div class="${css.output} ${type === 'error' ? css.error : '' }">
-                <span class=${css.page}>${page}</span> 
-                <span class=${css.flow}>${flow}</span>
-                <span class=${css.from}>${from}</span>
-                <span class=${css.type}>${type}</span>
-                <span class=${css.info}>${typeof body === 'string' ? body : JSON.stringify(body, ["swarm", "feeds", "links"], 3)}</span>
-            </div>
-            <div class=${css['code-line']}>${filename}:${line}</div>
-        </div>`
-        // console.log( message )
-        terminal.append(log)
-        terminal.scrollTop = terminal.scrollHeight
-        count++
+        sendMessage(message).then( log => {
+            terminal.append(log) 
+            terminal.scrollTop = terminal.scrollHeight
+        })
     }
 
     async function fetchData (path) {
-        const response = await fetch(path)
-        try {
-            if ( response.ok ) return response.json().then(data => data)
-            if ( response.status === 404 ) 
-                domlog({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 54})
-                throw new Error(`Failed load file from ${response.url}`)
-        } catch (e) {
-            console.log(e.message)
+        const response = await fetch(path)  
+        if ( response.ok ) return response.json().then(data => data)
+        if ( response.status === 404 ) {
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 54})
+            .then( log => terminal.append(log) )
+            // throw new Error(`Failed load file from ${response.url}`)
         }
-       
+    }
+
+    async function sendMessage (message) {
+        return await new Promise( (resolve, reject) => {
+            if (message === undefined) reject('no message import')
+            const log = domlog(message)
+            return resolve(log)
+        }).catch( err => { 
+            throw new Error(err.message) 
+        })
     }
 }
 
 const css = csjs`
+html {
+    box-sizing: border-box;
+}
+*, *::before, *::after {
+    box-sizing: inherit;
+}
 body {
     margin: 0;
     padding: 0;
@@ -94,54 +98,11 @@ body {
     font-size: 13px;
     overflow-y: auto;
 }
-.log:last-child, .log:last-child .page, .log:last-child .flow, .log:last-child .type {
-    color: #FFF500;
-    font-weight: bold;
-}
-.log {
-    display: grid;
-    grid-template-rows: auto;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    padding: 2px 12px 0 0;
-    border-bottom: 1px solid #333;
-}
-.output {
-
-}
-.badge {
-    background-color: #333;
-    padding: 6px;
-    margin-right: 10px;
-    font-size: 14px;
-    display: inline-block;
-}
-.code-line {}
-.error {
-    color: #FF3F3F;
-}
-.page {
-    display: inline-block;
-    color: rgba(255,255,255,.75);
-    background-color: #2A2E30;
-    padding: 4px 6px;
-    border-radius: 4px;
-}
-.flow {
-    color: #1DA5FF;
-}
-.from {
-    color: #fff;
-}
-.type {
-    color: #FFB14A;
-}
-.info {}
 `
 
 document.body.append( demoComponent() )
 }).call(this)}).call(this,"/demo/demo.js")
-},{"..":32,"bel":3,"csjs-inject":6,"path":30}],2:[function(require,module,exports){
+},{"..":33,"bel":3,"csjs-inject":6,"path":30,"ui-domlog":32}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -1992,6 +1953,84 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],32:[function(require,module,exports){
+const bel = require('bel')
+const csjs = require('csjs-inject')
+
+module.exports = domlog
+
+let count = 1
+
+function domlog (message) {
+    const { page = 'demo', from, flow, type, body, action, filename, line } = message
+    const log = bel`
+    <div class=${css.log} role="log">
+        <div class=${css.badge}>${count}</div>
+        <div class="${css.output} ${type === 'error' ? css.error : '' }">
+            <span class=${css.page}>${page}</span> 
+            <span class=${css.flow}>${flow}</span>
+            <span class=${css.from}>${from}</span>
+            <span class=${css.type}>${type}</span>
+            <span class=${css.info}>${typeof body === 'string' ? body : JSON.stringify(body, ["swarm", "feeds", "links"], 3)}</span>
+        </div>
+        <div class=${css['code-line']}>${filename}:${line}</div>
+    </div>`
+    count++
+    return log
+    
+}
+const css = csjs`
+.log {
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 2px 12px 0 0;
+    border-bottom: 1px solid #333;
+}
+.log:last-child, .log:last-child .page, .log:last-child .flow, .log:last-child .type {
+    color: #FFF500;
+    font-weight: bold;
+}
+.output {}
+.badge {
+    background-color: #333;
+    padding: 6px;
+    margin-right: 10px;
+    font-size: 14px;
+    display: inline-block;
+}
+.code-line {}
+.error {
+    
+}
+.error .type {
+    padding: 2px 6px;
+    color: white;
+    background-color: #AC0000;
+    border-radius: 2px;
+}
+.error .info {
+    color: #FF2626;
+}
+.page {
+    display: inline-block;
+    color: rgba(255,255,255,.75);
+    background-color: #2A2E30;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+.flow {
+    color: #1DA5FF;
+}
+.from {
+    color: #fff;
+}
+.type {
+    color: #FFB14A;
+}
+.info {}
+`
+},{"bel":3,"csjs-inject":6}],33:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
@@ -2005,16 +2044,20 @@ module.exports = autocomplete
 
 function autocomplete ({page, name, data}, protocol) {
     const widget = 'ui-autocomplete'
-    let receipients = []
-    let result = []
+    let recipients = []
     let val
     const send2Parent = protocol( receive )
     const iconClear = svg({css: `${css.icon} ${css['icon-clear']}`, path: 'assets/cancel.svg'})
+    const iconOption = svg({css: `${css.icon} ${css['icon-option']}`, path: 'assets/option.svg'})
     const clear = button({page, name: 'clear', content: iconClear, style: ['circle-solid', 'small'], color: 'light-grey', custom: [css.clear]}, clearProtocol('clear'))
     const input = bel`<input type="text" class=${css['search-input']} name=${name} role="search input" aria-label="search input" tabindex=0>`
     const controlForm = bel`<div class=${css['control-form']}>${input}</div>`
     const list = searchResult({page, name: 'swarm', data}, searchResultProtocol('swarm-key-result'))
     const search = bel`<div role="search" class=${css.search} aria-label="search">${controlForm}${list}</div>`
+    // option dropdown
+    const option = button({page, name: 'option', content: iconOption, style: 'default', color: 'fill-grey', custom: [css.option]}, optionProtocol('option'))
+    const action = bel`<aside class=${css.action}>${option}</aside>`
+    list.append(action)
 
     send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 24})
     
@@ -2028,7 +2071,7 @@ function autocomplete ({page, name, data}, protocol) {
 
     function publish (string) {
         list.classList.add(css.hide)
-        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 36 })
+        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 37 })
     }
 
     function searchFilter (string) {
@@ -2041,7 +2084,7 @@ function autocomplete ({page, name, data}, protocol) {
             })
             if ( arr.length === 0 ) return publish(string)
             list.classList.remove(css.hide)
-            return receipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: arr})
+            return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: arr})
         })
     }
 
@@ -2070,7 +2113,7 @@ function autocomplete ({page, name, data}, protocol) {
 
     function searchResultProtocol (name) {
         return send => {
-            receipients[name] = send
+            recipients[name] = send
             return function receiveSearchResult (message) {
                 const { page, from, flow, type, body } = message
                 if (type === 'click') selectSwarmAction(body)
@@ -2078,9 +2121,24 @@ function autocomplete ({page, name, data}, protocol) {
         }
     }
 
+    function optionProtocol (name) {
+        return send => {
+            recipients[name] = send
+            return function receiveOption (message) {
+                const { page, from, flow, type, action, body, filename, line } = message
+                // received message from clear button
+                if (type === 'click') handleOption(name)
+            }
+        }
+    }
+
+    function handleOption (name) {
+        send2Parent({page, from: name, flow: widget, type: 'click', filename, line: 100})
+    }
+
     function clearProtocol (name) {
         return send => {
-            receipients[name] = send
+            recipients[name] = send
             return function receiveClear (message) {
                 const { page, from, flow, type, action, body, filename, line } = message
                 // received message from clear button
@@ -2100,7 +2158,7 @@ function autocomplete ({page, name, data}, protocol) {
         }, 300)
         statusElementRemove()
         send2Parent({page, from: name, flow: widget, type: 'clear search', body: val, filename, line: 107})
-        receipients['swarm-key-result']({page, from: name, type: 'clear', body: data})
+        recipients['swarm-key-result']({page, from: name, type: 'clear', body: data})
     }
 
     function handleClick (event) {
@@ -2187,6 +2245,21 @@ const css = csjs`
 .isValid {
     background-color: #109B36;
 }
+.action {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+}
+.option {
+    transition: background-color 0.4s ease-in-out;
+    padding: 7px 10px;
+}
+.option:hover {
+    background-color: #000;
+}
+.icon-option {
+    width: 24px;
+}
 @keyframes showup {
     0% {
         opacity: 0;
@@ -2205,7 +2278,7 @@ const css = csjs`
 }
 `
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"datdot-ui-button":25,"datdot-ui-graphic":26,"path":30,"search-result":33}],33:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"datdot-ui-button":25,"datdot-ui-graphic":26,"path":30,"search-result":34}],34:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 
