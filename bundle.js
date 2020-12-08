@@ -12,11 +12,13 @@ function demoComponent () {
     let number = 0
     let recipients = []
     let result = fetchData('./src/data.json')
+    const log = domlog({page: 'PLANS', from: 'demo page', type: 'ready', filename, line: 13})
     // show logs
     const terminal = bel`<div class=${css.terminal}></div>`
     const searchBox = autocomplete({page: 'PLANS', name: 'swarm key', data: result }, protocol('swarmkey'))
     // container
     const container = wrap(searchBox, terminal)
+    terminal.append(log)
     return container
 
     function wrap (content) {
@@ -33,7 +35,6 @@ function demoComponent () {
 
     function protocol (name) {
         return send => {
-            send({page: 'PLANS', from: 'demo page', type: 'ready'})
             return receive
         }
     }
@@ -51,7 +52,7 @@ function demoComponent () {
         const response = await fetch(path)  
         if ( response.ok ) return response.json().then(data => data)
         if ( response.status === 404 ) {
-            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 54})
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 53})
             .then( log => terminal.append(log) )
             // throw new Error(`Failed load file from ${response.url}`)
         }
