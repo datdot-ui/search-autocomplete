@@ -6,19 +6,16 @@ const path = require('path')
 const filename = path.basename(__filename)
 const autocomplete = require('..')
 const domlog = require('ui-domlog')
+const currentLine = require('current-line')
 
 function demoComponent () {
-    let count = 1
-    let number = 0
     let recipients = []
     let result = fetchData('./src/data.json')
-    const log = domlog({page: 'PLANS', from: 'demo page', type: 'ready', filename, line: 13})
     // show logs
     const terminal = bel`<div class=${css.terminal}></div>`
-    const searchBox = autocomplete({page: 'PLANS', name: 'swarm key', data: result }, protocol('swarmkey'))
+    const searchBox = autocomplete({page: 'PLANS', flow: 'search', name: 'swarm key', data: result }, protocol('swarmkey'))
     // container
     const container = wrap(searchBox, terminal)
-    terminal.append(log)
     return container
 
     function wrap (content) {
@@ -35,24 +32,33 @@ function demoComponent () {
 
     function protocol (name) {
         return send => {
+            recipients[name] = send
             return receive
         }
     }
 
     function receive (message) {
-        const { page, from, flow, type, action, body, filename, line } = message
+        const { page, from, flow, type, action, body } = message
         // console.log(`DEMO <= ${page}/${from} ${type}` );
-        sendMessage(message).then( log => {
-            terminal.append(log) 
-            terminal.scrollTop = terminal.scrollHeight
-        })
+        showLog(message)
+        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: currentLine.get().line - 2})
+        if (type === 'clear search') return 
     }
+
+    // keep the scroll on bottom when the log displayed on the terminal
+    function showLog (message) { 
+        sendMessage(message)
+        .then( log => {
+            terminal.append(log)
+            terminal.scrollTop = terminal.scrollHeight
+        }
+    )}
 
     async function fetchData (path) {
         const response = await fetch(path)  
         if ( response.ok ) return response.json().then(data => data)
         if ( response.status === 404 ) {
-            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 53})
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: currentLine.get().line - 2})
             .then( log => terminal.append(log) )
             // throw new Error(`Failed load file from ${response.url}`)
         }
@@ -103,7 +109,7 @@ body {
 
 document.body.append( demoComponent() )
 }).call(this)}).call(this,"/demo/demo.js")
-},{"..":33,"bel":3,"csjs-inject":6,"path":30,"ui-domlog":32}],2:[function(require,module,exports){
+},{"..":32,"bel":3,"csjs-inject":6,"current-line":23,"path":29,"ui-domlog":31}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -337,7 +343,7 @@ module.exports = hyperx(belCreateElement, {comments: true})
 module.exports.default = module.exports
 module.exports.createElement = belCreateElement
 
-},{"./appendChild":2,"hyperx":28}],4:[function(require,module,exports){
+},{"./appendChild":2,"hyperx":27}],4:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -356,7 +362,7 @@ function csjsInserter() {
 module.exports = csjsInserter;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"csjs":9,"insert-css":29}],5:[function(require,module,exports){
+},{"csjs":9,"insert-css":28}],5:[function(require,module,exports){
 'use strict';
 
 module.exports = require('csjs/get-css');
@@ -834,10 +840,87 @@ function scopify(css, ignores) {
 }
 
 },{"./regex":19,"./replace-animations":20,"./scoped-name":21}],23:[function(require,module,exports){
-arguments[4][2][0].apply(exports,arguments)
-},{"dup":2}],24:[function(require,module,exports){
-arguments[4][3][0].apply(exports,arguments)
-},{"./appendChild":23,"dup":3,"hyperx":28}],25:[function(require,module,exports){
+/*
+# gen doc
+npm i jsdoc-to-markdown -g
+jsdoc2md index.js > docs/api.md
+*/
+
+/**
+ * @typedef StackItem
+ * @type {object}
+ * @property {string} method - Name of function on stack
+ * @property {number} line - Line number on stack
+ * @property {string} file - /PathOfFile/Source/NameOfFilename.js
+ * @property {string} filename - NameOfFile
+ */
+
+/**
+ * @module currentLine
+ * @example
+ * const currentLine = require('current-line')
+ */
+
+/**
+ * @alias module:currentLine
+ * @typicalname currentLine
+ */
+class CurrentLine {
+  /**
+   * Returns a single item
+   *
+   * @param {number} [level] Useful to return levels up on the stack. If not informed, the first (0, zero index) element of the stack will be returned
+   * @returns {StackItem}
+   */
+  get(level = 0) {
+    const stack = getStack();
+    const i = Math.min(level + 1, stack.length - 1);
+    const item = stack[i];
+    const result = parse(item);
+    return result;
+  }
+
+  /**
+   * Returns all stack
+   *
+   * @returns {StackItem[]}
+   */
+  all() {
+    const stack = getStack();
+    const result = [];
+    for (let i = 1; i < stack.length; i++) {
+      const item = stack[i];
+      result.push(parse(item));
+    }
+    return result;
+  }
+}
+
+function getStack() {
+  const orig = Error.prepareStackTrace;
+  Error.prepareStackTrace = function (_, stack) {
+    return stack;
+  };
+  const err = new Error();
+  Error.captureStackTrace(err, arguments.callee);
+  const stack = err.stack;
+  Error.prepareStackTrace = orig;
+  return stack;
+}
+
+function parse(item) {
+  const result = {
+    method: item.getFunctionName(),
+    line: item.getLineNumber(),
+    file: item.getFileName(),
+  };
+  result.filename = result.file.replace(/^.*\/|\\/gm, "").replace(/\.\w+$/gm, "");
+  return result;
+}
+
+module.exports = new CurrentLine();
+
+},{}],24:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
@@ -846,10 +929,10 @@ const filename = path.basename(__filename)
 
 module.exports = button
 
-function button ({page, name, content, style, color, custom, current, disabled = false}, protocol) {
+function button ({page, flow = null, name, content, style, color, custom, current, disabled = false}, protocol) {
     const widget = 'ui-button'
     const send2Parent = protocol( receive )
-    send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 11})
+    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 11})
     
     let button = bel`<button role="button" class="${css.btn} ${ checkStyle() } ${color ? css[color] : ''} ${custom ? custom.join(' ') : ''} ${current ? css.current : '' }" name=${name} aria-label=${name} disabled=${disabled}>${content}</button>`
     button.onclick = click
@@ -878,7 +961,7 @@ function button ({page, name, content, style, color, custom, current, disabled =
         button.append(ripple)
         setTimeout( () => { ripple.remove() }, 600)
 
-        send2Parent({page, from: name, flow: widget, type: 'click', filename, line: 40})
+        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'click', filename, line: 40})
     }
 
     function receive(message) {
@@ -900,7 +983,10 @@ const css = csjs`
     cursor: pointer;
     outline: none;
     overflow: hidden;
-    transition: background-color .25s, border .25s, color .25s ease-in-out;
+    transition: background-color .3s, border .3s, color .3s ease-in-out;
+}
+.btn svg g {
+    transition: fill .3s linear;
 }
 .solid {
     color: #fff;
@@ -927,14 +1013,26 @@ const css = csjs`
     border-radius: 8px;
     background-color: transparent;
 }
-.fill-grey g {
+.fill-grey svg g {
     fill: #BBBBBB;
 }
 .fill-grey:hover {
-    background-color: rgba(0, 0, 0, .15);
+    background-color: rgba(0, 0, 0, .75);
 }
-.fill-grey:hover g {
+.fill-grey:hover svg g {
     fill: #fff;
+}
+.fill-dark svg g {
+    fill: #333;
+}
+.fill-dark:hover {
+    background-color: rgba(255,255,255, .5);
+}
+.fill-white svg g {
+    fill: #fff;
+}
+.fill-white:hover {
+    background-color: rgba(188,188,188, .5);
 }
 .stroke-black path {
     stroke: #000;
@@ -997,6 +1095,10 @@ const css = csjs`
 .white {
     color: #707070;
     background-color: #fff;
+}
+.white:hover {
+    color: #fff;
+    background-color: #d3d3d3;
 }
 .list {
     color: #707070;
@@ -1091,7 +1193,7 @@ svg {
 }
 `
 }).call(this)}).call(this,"/node_modules/datdot-ui-button/src/index.js")
-},{"bel":24,"csjs-inject":6,"path":30}],26:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"path":29}],25:[function(require,module,exports){
 module.exports = svg
 
 function svg(opts) {
@@ -1119,7 +1221,7 @@ function svg(opts) {
     
     return el
 }   
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -1140,7 +1242,7 @@ function attributeToProperty (h) {
   }
 }
 
-},{}],28:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var attrToProp = require('hyperscript-attribute-to-property')
 
 var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
@@ -1437,7 +1539,7 @@ var closeRE = RegExp('^(' + [
 ].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
 function selfClosing (tag) { return closeRE.test(tag) }
 
-},{"hyperscript-attribute-to-property":27}],29:[function(require,module,exports){
+},{"hyperscript-attribute-to-property":26}],28:[function(require,module,exports){
 var inserted = {};
 
 module.exports = function (css, options) {
@@ -1461,7 +1563,7 @@ module.exports = function (css, options) {
     }
 };
 
-},{}],30:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 (function (process){(function (){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -1767,7 +1869,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":31}],31:[function(require,module,exports){
+},{"_process":30}],30:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -1953,7 +2055,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],32:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 
@@ -2031,7 +2133,7 @@ const css = csjs`
 }
 .info {}
 `
-},{"bel":3,"csjs-inject":6}],33:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6}],32:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
@@ -2043,7 +2145,7 @@ const searchResult = require('search-result')
 
 module.exports = autocomplete
 
-function autocomplete ({page, name, data}, protocol) {
+function autocomplete ({page, flow, name, data}, protocol) {
     const widget = 'ui-autocomplete'
     let recipients = []
     let val
@@ -2060,7 +2162,7 @@ function autocomplete ({page, name, data}, protocol) {
     const action = bel`<aside class=${css.action}>${option}</aside>`
     list.append(action)
 
-    send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 24})
+    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 28})
     
     // search.onclick = handleClick
     input.onfocus = handleFocus
@@ -2072,7 +2174,7 @@ function autocomplete ({page, name, data}, protocol) {
 
     function publish (string) {
         list.classList.add(css.hide)
-        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 37 })
+        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 40 })
     }
 
     function searchFilter (string) {
@@ -2081,11 +2183,12 @@ function autocomplete ({page, name, data}, protocol) {
         data.then( args => { 
             let arr = args.filter( item => {
                 let swarm = item.swarm.toLowerCase()
-                return item.type.includes(searchString) || swarm.includes( searchString ) || item.type.includes(searchString.split('://')[0]) && swarm.includes( searchString.split('://')[1] )
+                let address = `${item.type}://`
+                return address.includes(searchString) || swarm.includes(searchString) || address.includes(searchString.split("://")[0]) && swarm.includes( searchString.split('://')[1] )
             })
             if ( arr.length === 0 ) return publish(string)
             list.classList.remove(css.hide)
-            return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: arr})
+            return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: {data: arr, keyword: searchString.includes('://') ? searchString.split('://')[1] : searchString}})
         })
     }
 
@@ -2108,8 +2211,8 @@ function autocomplete ({page, name, data}, protocol) {
         controlForm.classList.add(css.selected)
         controlForm.insertBefore(span, input)
         controlForm.append(clear)
-        list.remove()
-        send2Parent({page, from: 'feeds list', flow: widget, type: 'selected', body: obj, filename, line: 73})
+        list.classList.add(css.hide)
+        send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 77})
     }
 
     function searchResultProtocol (name) {
@@ -2134,7 +2237,7 @@ function autocomplete ({page, name, data}, protocol) {
     }
 
     function handleOption (name) {
-        send2Parent({page, from: name, flow: widget, type: 'click', filename, line: 100})
+        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'click', filename, line: 103})
     }
 
     function clearProtocol (name) {
@@ -2152,21 +2255,21 @@ function autocomplete ({page, name, data}, protocol) {
         val = ''
         input.value = val
         clear.classList.toggle(css.hide)
-        // list.classList.remove(css.hide)
+        list.classList.remove(css.hide)
         setTimeout(()=> {
             clear.classList.toggle(css.hide)
             clear.remove()
         }, 300)
         statusElementRemove()
-        send2Parent({page, from: name, flow: widget, type: 'clear search', body: val, filename, line: 107})
-        recipients['swarm-key-result']({page, from: name, type: 'clear', body: data})
+        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 126})
+        recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear', body: data})
     }
 
-    function handleClick (event) {
-        const target = event.target
-        if ( target.tagName === 'INPUT' ) send2Parent({page, from: target.name, flow: widget, body: target.value, type: 'click', filename, line: 113})
-        // if ( target.tagName === 'BUTTON') handleClearSearch(event)
-    }
+    // function handleClick (event) {
+    //     const target = event.target
+    //     if ( target.tagName === 'INPUT' ) send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}`: widget, body: target.value, type: 'click', filename, line: 132})
+    //     // if ( target.tagName === 'BUTTON') handleClearSearch(event)
+    // }
 
     function handleKey (event) {
         const target = event.target
@@ -2177,23 +2280,24 @@ function autocomplete ({page, name, data}, protocol) {
             statusElementRemove()
         }
         searchFilter(val)
-        send2Parent({page, from: target.name, flow: widget, type: 'keyup', body: val, filename, line: 126})
+        recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: target.value})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 146})
     }
 
     function handleBlur (event) {
         const target = event.target
-        send2Parent({page, from: target.name, flow: widget, type: 'blur', body: val, filename, line: 131})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 151})
     }
 
     function handleFocus (event) {
         const target = event.target
-        send2Parent({page, from: target.name, flow: widget, type: 'focus', body: val, filename, line: 136})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 156})
     }
 
     function handleChange (event) {
         const target = event.target
         val = target.value
-        send2Parent({page, from: target.name, flow: widget, type: 'change', body: val, filename, line: 142})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 162})
     }
 
     function receive (message) {
@@ -2279,13 +2383,13 @@ const css = csjs`
 }
 `
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"datdot-ui-button":25,"datdot-ui-graphic":26,"path":30,"search-result":34}],34:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"datdot-ui-button":24,"datdot-ui-graphic":25,"path":29,"search-result":33}],33:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 
 module.exports = searchResult
 
-function searchResult ({page, name = 'search result', data}, protocol) {
+function searchResult ({page, flow = null, name = 'search result', data}, protocol) {
     const widget = 'ui-swarm-list'
     const send2Parent = protocol( receive )
     const ul = bel`<ul role="feeds" class=${css.feeds}></ul>`
@@ -2295,12 +2399,12 @@ function searchResult ({page, name = 'search result', data}, protocol) {
     const element = bel`<div class=${css.result}>${content}${searchFooter}</div>`
 
     renderList(data)
-    send2Parent({page, from: name, flow: widget, type: 'init'})
+    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init'})
 
     return element
 
     function click (obj) {
-        return send2Parent({page, from: name, flow: widget, type: 'click', body: obj})
+        return send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'click', body: obj})
     }
 
     function renderList (promise) {
@@ -2310,12 +2414,12 @@ function searchResult ({page, name = 'search result', data}, protocol) {
         })
     }
 
-    function filterList (data) {
+    function filterList ({data, keyword}) {
         ul.innerHTML = ''
-        return list(data)
+        return list(data, keyword)
     }
 
-    function list (args) {
+    function list (args, keyword) {
         let len = `${args.length} feeds` 
         feedsTotal.innerText = len
         return args.map( obj => {     
@@ -2324,11 +2428,21 @@ function searchResult ({page, name = 'search result', data}, protocol) {
             <li role=${obj.type} arial-label="${obj.swarm}" onclick=${ () => click({...obj, isValid: isValidFeeds(obj.feeds)}) }>
                 <span class="${css.status}${isValidFeeds(obj.feeds) ? ` ${css.isValid}` : ''}"></span>
                 <span class="${css.badge} ${css[type]}">${type}</span>
-                <span class=${css.feed}>${obj.swarm}</span>
+                <span class=${css.feed}>${highlight(keyword, obj.swarm)}</span>
             </li>`
             ul.append(li)
             content.append(ul)
         })
+    }
+
+    function highlight (string, swarm) {
+        if (string === undefined || !swarm.toLowerCase().includes(string)) return swarm
+        const matchStart = swarm.toLowerCase().indexOf(string)
+        const matchEnd = matchStart + string.length - 1
+        const beforeMatch = swarm.slice(0, matchStart)
+        const matchLetter = swarm.slice(matchStart, matchEnd + 1)
+        const afterMatch = swarm.slice(matchEnd+1)
+        return bel`<span>${beforeMatch}<span class=${css.highlight}>${matchLetter}</span>${afterMatch}</span>`
     }
 
     function publish (key) {
@@ -2341,7 +2455,7 @@ function searchResult ({page, name = 'search result', data}, protocol) {
     }
 
     function receive (message) {
-        const { page, from, type, action, body} = message
+        const { page, flow, from, type, action, body} = message
         if (type === 'clear') renderList(body)
         if (type === 'filter') filterList(body)
         if (type === 'not found') publish(body)
@@ -2418,6 +2532,9 @@ const css = csjs`
 .feed {}
 .hide {
     display: none;
+}
+.highlight {
+    background-color: #FFEEAF;
 }
 `
 },{"bel":3,"csjs-inject":6}]},{},[1]);

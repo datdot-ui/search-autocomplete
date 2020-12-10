@@ -8,7 +8,7 @@ const searchResult = require('search-result')
 
 module.exports = autocomplete
 
-function autocomplete ({page, name, data}, protocol) {
+function autocomplete ({page, flow, name, data}, protocol) {
     const widget = 'ui-autocomplete'
     let recipients = []
     let val
@@ -25,7 +25,7 @@ function autocomplete ({page, name, data}, protocol) {
     const action = bel`<aside class=${css.action}>${option}</aside>`
     list.append(action)
 
-    send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 24})
+    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 28})
     
     // search.onclick = handleClick
     input.onfocus = handleFocus
@@ -37,7 +37,7 @@ function autocomplete ({page, name, data}, protocol) {
 
     function publish (string) {
         list.classList.add(css.hide)
-        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 37 })
+        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 40 })
     }
 
     function searchFilter (string) {
@@ -46,11 +46,12 @@ function autocomplete ({page, name, data}, protocol) {
         data.then( args => { 
             let arr = args.filter( item => {
                 let swarm = item.swarm.toLowerCase()
-                return item.type.includes(searchString) || swarm.includes( searchString ) || item.type.includes(searchString.split('://')[0]) && swarm.includes( searchString.split('://')[1] )
+                let address = `${item.type}://`
+                return address.includes(searchString) || swarm.includes(searchString) || address.includes(searchString.split("://")[0]) && swarm.includes( searchString.split('://')[1] )
             })
             if ( arr.length === 0 ) return publish(string)
             list.classList.remove(css.hide)
-            return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: arr})
+            return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter', body: {data: arr, keyword: searchString.includes('://') ? searchString.split('://')[1] : searchString}})
         })
     }
 
@@ -73,8 +74,8 @@ function autocomplete ({page, name, data}, protocol) {
         controlForm.classList.add(css.selected)
         controlForm.insertBefore(span, input)
         controlForm.append(clear)
-        list.remove()
-        send2Parent({page, from: 'feeds list', flow: widget, type: 'selected', body: obj, filename, line: 73})
+        list.classList.add(css.hide)
+        send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 77})
     }
 
     function searchResultProtocol (name) {
@@ -99,7 +100,7 @@ function autocomplete ({page, name, data}, protocol) {
     }
 
     function handleOption (name) {
-        send2Parent({page, from: name, flow: widget, type: 'click', filename, line: 100})
+        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'click', filename, line: 103})
     }
 
     function clearProtocol (name) {
@@ -117,21 +118,21 @@ function autocomplete ({page, name, data}, protocol) {
         val = ''
         input.value = val
         clear.classList.toggle(css.hide)
-        // list.classList.remove(css.hide)
+        list.classList.remove(css.hide)
         setTimeout(()=> {
             clear.classList.toggle(css.hide)
             clear.remove()
         }, 300)
         statusElementRemove()
-        send2Parent({page, from: name, flow: widget, type: 'clear search', body: val, filename, line: 107})
-        recipients['swarm-key-result']({page, from: name, type: 'clear', body: data})
+        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 126})
+        recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear', body: data})
     }
 
-    function handleClick (event) {
-        const target = event.target
-        if ( target.tagName === 'INPUT' ) send2Parent({page, from: target.name, flow: widget, body: target.value, type: 'click', filename, line: 113})
-        // if ( target.tagName === 'BUTTON') handleClearSearch(event)
-    }
+    // function handleClick (event) {
+    //     const target = event.target
+    //     if ( target.tagName === 'INPUT' ) send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}`: widget, body: target.value, type: 'click', filename, line: 132})
+    //     // if ( target.tagName === 'BUTTON') handleClearSearch(event)
+    // }
 
     function handleKey (event) {
         const target = event.target
@@ -142,23 +143,24 @@ function autocomplete ({page, name, data}, protocol) {
             statusElementRemove()
         }
         searchFilter(val)
-        send2Parent({page, from: target.name, flow: widget, type: 'keyup', body: val, filename, line: 126})
+        recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: target.value})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 146})
     }
 
     function handleBlur (event) {
         const target = event.target
-        send2Parent({page, from: target.name, flow: widget, type: 'blur', body: val, filename, line: 131})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 151})
     }
 
     function handleFocus (event) {
         const target = event.target
-        send2Parent({page, from: target.name, flow: widget, type: 'focus', body: val, filename, line: 136})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 156})
     }
 
     function handleChange (event) {
         const target = event.target
         val = target.value
-        send2Parent({page, from: target.name, flow: widget, type: 'change', body: val, filename, line: 142})
+        send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 162})
     }
 
     function receive (message) {

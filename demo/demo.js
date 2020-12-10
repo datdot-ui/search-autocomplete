@@ -4,19 +4,16 @@ const path = require('path')
 const filename = path.basename(__filename)
 const autocomplete = require('..')
 const domlog = require('ui-domlog')
+const currentLine = require('current-line')
 
 function demoComponent () {
-    let count = 1
-    let number = 0
     let recipients = []
     let result = fetchData('./src/data.json')
-    const log = domlog({page: 'PLANS', from: 'demo page', type: 'ready', filename, line: 13})
     // show logs
     const terminal = bel`<div class=${css.terminal}></div>`
-    const searchBox = autocomplete({page: 'PLANS', name: 'swarm key', data: result }, protocol('swarmkey'))
+    const searchBox = autocomplete({page: 'PLANS', flow: 'search', name: 'swarm key', data: result }, protocol('swarmkey'))
     // container
     const container = wrap(searchBox, terminal)
-    terminal.append(log)
     return container
 
     function wrap (content) {
@@ -33,24 +30,33 @@ function demoComponent () {
 
     function protocol (name) {
         return send => {
+            recipients[name] = send
             return receive
         }
     }
 
     function receive (message) {
-        const { page, from, flow, type, action, body, filename, line } = message
+        const { page, from, flow, type, action, body } = message
         // console.log(`DEMO <= ${page}/${from} ${type}` );
-        sendMessage(message).then( log => {
-            terminal.append(log) 
-            terminal.scrollTop = terminal.scrollHeight
-        })
+        showLog(message)
+        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: currentLine.get().line - 2})
+        if (type === 'clear search') return 
     }
+
+    // keep the scroll on bottom when the log displayed on the terminal
+    function showLog (message) { 
+        sendMessage(message)
+        .then( log => {
+            terminal.append(log)
+            terminal.scrollTop = terminal.scrollHeight
+        }
+    )}
 
     async function fetchData (path) {
         const response = await fetch(path)  
         if ( response.ok ) return response.json().then(data => data)
         if ( response.status === 404 ) {
-            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 53})
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: currentLine.get().line - 2})
             .then( log => terminal.append(log) )
             // throw new Error(`Failed load file from ${response.url}`)
         }
