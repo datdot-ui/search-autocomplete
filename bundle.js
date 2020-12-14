@@ -6,7 +6,6 @@ const path = require('path')
 const filename = path.basename(__filename)
 const autocomplete = require('..')
 const domlog = require('ui-domlog')
-const currentLine = require('current-line')
 
 function demoComponent () {
     let recipients = []
@@ -41,7 +40,7 @@ function demoComponent () {
         const { page, from, flow, type, action, body } = message
         // console.log(`DEMO <= ${page}/${from} ${type}` );
         showLog(message)
-        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: currentLine.get().line - 2})
+        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: 41})
         if (type === 'clear search') return 
     }
 
@@ -58,7 +57,7 @@ function demoComponent () {
         const response = await fetch(path)  
         if ( response.ok ) return response.json().then(data => data)
         if ( response.status === 404 ) {
-            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: currentLine.get().line - 2})
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 58})
             .then( log => terminal.append(log) )
             // throw new Error(`Failed load file from ${response.url}`)
         }
@@ -109,7 +108,7 @@ body {
 
 document.body.append( demoComponent() )
 }).call(this)}).call(this,"/demo/demo.js")
-},{"..":32,"bel":3,"csjs-inject":6,"current-line":23,"path":29,"ui-domlog":31}],2:[function(require,module,exports){
+},{"..":31,"bel":3,"csjs-inject":6,"path":28,"ui-domlog":30}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -343,7 +342,7 @@ module.exports = hyperx(belCreateElement, {comments: true})
 module.exports.default = module.exports
 module.exports.createElement = belCreateElement
 
-},{"./appendChild":2,"hyperx":27}],4:[function(require,module,exports){
+},{"./appendChild":2,"hyperx":26}],4:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -362,7 +361,7 @@ function csjsInserter() {
 module.exports = csjsInserter;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"csjs":9,"insert-css":28}],5:[function(require,module,exports){
+},{"csjs":9,"insert-css":27}],5:[function(require,module,exports){
 'use strict';
 
 module.exports = require('csjs/get-css');
@@ -840,87 +839,6 @@ function scopify(css, ignores) {
 }
 
 },{"./regex":19,"./replace-animations":20,"./scoped-name":21}],23:[function(require,module,exports){
-/*
-# gen doc
-npm i jsdoc-to-markdown -g
-jsdoc2md index.js > docs/api.md
-*/
-
-/**
- * @typedef StackItem
- * @type {object}
- * @property {string} method - Name of function on stack
- * @property {number} line - Line number on stack
- * @property {string} file - /PathOfFile/Source/NameOfFilename.js
- * @property {string} filename - NameOfFile
- */
-
-/**
- * @module currentLine
- * @example
- * const currentLine = require('current-line')
- */
-
-/**
- * @alias module:currentLine
- * @typicalname currentLine
- */
-class CurrentLine {
-  /**
-   * Returns a single item
-   *
-   * @param {number} [level] Useful to return levels up on the stack. If not informed, the first (0, zero index) element of the stack will be returned
-   * @returns {StackItem}
-   */
-  get(level = 0) {
-    const stack = getStack();
-    const i = Math.min(level + 1, stack.length - 1);
-    const item = stack[i];
-    const result = parse(item);
-    return result;
-  }
-
-  /**
-   * Returns all stack
-   *
-   * @returns {StackItem[]}
-   */
-  all() {
-    const stack = getStack();
-    const result = [];
-    for (let i = 1; i < stack.length; i++) {
-      const item = stack[i];
-      result.push(parse(item));
-    }
-    return result;
-  }
-}
-
-function getStack() {
-  const orig = Error.prepareStackTrace;
-  Error.prepareStackTrace = function (_, stack) {
-    return stack;
-  };
-  const err = new Error();
-  Error.captureStackTrace(err, arguments.callee);
-  const stack = err.stack;
-  Error.prepareStackTrace = orig;
-  return stack;
-}
-
-function parse(item) {
-  const result = {
-    method: item.getFunctionName(),
-    line: item.getLineNumber(),
-    file: item.getFileName(),
-  };
-  result.filename = result.file.replace(/^.*\/|\\/gm, "").replace(/\.\w+$/gm, "");
-  return result;
-}
-
-module.exports = new CurrentLine();
-
-},{}],24:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
@@ -1193,7 +1111,7 @@ svg {
 }
 `
 }).call(this)}).call(this,"/node_modules/datdot-ui-button/src/index.js")
-},{"bel":3,"csjs-inject":6,"path":29}],25:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"path":28}],24:[function(require,module,exports){
 module.exports = svg
 
 function svg(opts) {
@@ -1221,7 +1139,7 @@ function svg(opts) {
     
     return el
 }   
-},{}],26:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -1242,7 +1160,7 @@ function attributeToProperty (h) {
   }
 }
 
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var attrToProp = require('hyperscript-attribute-to-property')
 
 var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
@@ -1539,7 +1457,7 @@ var closeRE = RegExp('^(' + [
 ].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
 function selfClosing (tag) { return closeRE.test(tag) }
 
-},{"hyperscript-attribute-to-property":26}],28:[function(require,module,exports){
+},{"hyperscript-attribute-to-property":25}],27:[function(require,module,exports){
 var inserted = {};
 
 module.exports = function (css, options) {
@@ -1563,7 +1481,7 @@ module.exports = function (css, options) {
     }
 };
 
-},{}],29:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function (process){(function (){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -1869,7 +1787,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":30}],30:[function(require,module,exports){
+},{"_process":29}],29:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2055,7 +1973,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],31:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 
@@ -2133,7 +2051,7 @@ const css = csjs`
 }
 .info {}
 `
-},{"bel":3,"csjs-inject":6}],32:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6}],31:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
@@ -2383,7 +2301,7 @@ const css = csjs`
 }
 `
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"datdot-ui-button":24,"datdot-ui-graphic":25,"path":29,"search-result":33}],33:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"datdot-ui-button":23,"datdot-ui-graphic":24,"path":28,"search-result":32}],32:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 

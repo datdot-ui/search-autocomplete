@@ -31,7 +31,6 @@
     "datdot-ui-graphic": "github:fionataeyang/datdot-ui-graphic"
   },
   "devDependencies": {
-    "current-line": "^1.0.1",
     "ui-domlog": "github:fionataeyang/ui-domlog"
   }
 }

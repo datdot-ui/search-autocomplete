@@ -4,7 +4,6 @@ const path = require('path')
 const filename = path.basename(__filename)
 const autocomplete = require('..')
 const domlog = require('ui-domlog')
-const currentLine = require('current-line')
 
 function demoComponent () {
     let recipients = []
@@ -39,7 +38,7 @@ function demoComponent () {
         const { page, from, flow, type, action, body } = message
         // console.log(`DEMO <= ${page}/${from} ${type}` );
         showLog(message)
-        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: currentLine.get().line - 2})
+        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: 41})
         if (type === 'clear search') return 
     }
 
@@ -56,7 +55,7 @@ function demoComponent () {
         const response = await fetch(path)  
         if ( response.ok ) return response.json().then(data => data)
         if ( response.status === 404 ) {
-            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: currentLine.get().line - 2})
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 58})
             .then( log => terminal.append(log) )
             // throw new Error(`Failed load file from ${response.url}`)
         }
