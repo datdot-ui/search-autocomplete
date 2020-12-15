@@ -77,6 +77,7 @@ function demoComponent () {
 const css = csjs`
 html {
     box-sizing: border-box;
+    height: 100%;
 }
 *, *::before, *::after {
     box-sizing: inherit;
