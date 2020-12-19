@@ -109,7 +109,7 @@ body {
 
 document.body.append( demoComponent() )
 }).call(this)}).call(this,"/demo/demo.js")
-},{"..":31,"bel":3,"csjs-inject":6,"path":28,"ui-domlog":30}],2:[function(require,module,exports){
+},{"..":32,"bel":3,"csjs-inject":6,"path":29,"ui-domlog":31}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -343,7 +343,7 @@ module.exports = hyperx(belCreateElement, {comments: true})
 module.exports.default = module.exports
 module.exports.createElement = belCreateElement
 
-},{"./appendChild":2,"hyperx":26}],4:[function(require,module,exports){
+},{"./appendChild":2,"hyperx":27}],4:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -362,7 +362,7 @@ function csjsInserter() {
 module.exports = csjsInserter;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"csjs":9,"insert-css":27}],5:[function(require,module,exports){
+},{"csjs":9,"insert-css":28}],5:[function(require,module,exports){
 'use strict';
 
 module.exports = require('csjs/get-css');
@@ -852,6 +852,7 @@ function button ({page, flow = null, name, content, style, color, custom, curren
     const widget = 'ui-button'
     const send2Parent = protocol( receive )
     send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 11})
+    let state
     
     let button = bel`<button role="button" class="${css.btn} ${ checkStyle() } ${color ? css[color] : ''} ${custom ? custom.join(' ') : ''} ${current ? css.current : '' }" name=${name} aria-label=${name} disabled=${disabled}>${content}</button>`
     button.onclick = click
@@ -879,15 +880,34 @@ function button ({page, flow = null, name, content, style, color, custom, curren
 
         button.append(ripple)
         setTimeout( () => { ripple.remove() }, 600)
-
         send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'click', filename, line: 40})
     }
 
+    function setState(update) {
+        return state = update
+    }
+
+    function toggleActive (boolean, message) {
+        const { page, from, flow } = message
+        if (boolean) {
+            let newState = setState('self-active')
+            send2Parent({page, flow, from, type: 'state', body: newState, filename, line: 51})
+            button.classList.add(css.active)
+        } else {
+            let newState = setState('remove-active')
+            send2Parent({page, flow, from, type: 'state', body: newState, filename, line: 55})
+            button.classList.remove(css.active)
+        }
+        
+    }
+
     function receive(message) {
-        const {page, from, type, action, body} = message
+        const { type } = message
         // console.log('received from main component', message )
-        if ( type === 'active' ) button.classList.add(css.current)
+        if ( type === 'current-active' ) button.classList.add(css.current)
         if ( type === 'disabled' ) button.setAttribute('disabled', true)
+        if ( type === 'active' ) toggleActive(true, message)
+        if ( type === 'remove-active' ) toggleActive(false, message)
     }
 }
 
@@ -1081,14 +1101,6 @@ svg {
     stroke: #BBB;
 }
 .current {}
-.option.current {
-    font-size: 16px;
-    color: #000;
-    font-weight: bold;
-    border-radius: 30px;
-    border: 2px solid #000;
-    padding: 10px 15px;
-}
 .nav {
     padding: 0;
     line-height: 40px;
@@ -1097,6 +1109,21 @@ svg {
     color: #242424;
     font-weight: bold;
     background-color: #F2F2F2;
+}
+.option {
+    border: 2px solid rgba(255,255,255,0);
+    border-radius: 18px;
+    transition: border .6s, color .5s ease-in-out;
+}
+.option.current {
+    font-size: 16px;
+    font-weight: bold;
+    color: #000;
+    border: 2px solid rgba(0,0,0,1);
+}
+.active {
+    color: #fff;
+    background-color: #000;
 }
 @keyframes ripples {
     0% {
@@ -1112,7 +1139,273 @@ svg {
 }
 `
 }).call(this)}).call(this,"/node_modules/datdot-ui-button/src/index.js")
-},{"bel":3,"csjs-inject":6,"path":28}],24:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"path":29}],24:[function(require,module,exports){
+(function (__filename){(function (){
+const bel = require('bel')
+const csjs = require('csjs-inject')
+const button = require('datdot-ui-button')
+const svg = require('datdot-ui-graphic')
+const path = require('path')
+const filename = path.basename(__filename)
+
+module.exports = filterOption
+
+function filterOption ({page, flow, name, data}, protocol) {
+    const widget = 'ui-filter-option'
+    const send2Parent = protocol( receive )
+    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 13})
+    let recipients = []
+    // icon
+    const iconOption = svg( { css: `${css.icon} ${css['icon-option']}`, path: 'assets/option.svg' })
+    // button
+    const filterOption = button({page, flow: flow ? `${flow}/${widget}` : widget,  name: 'filter-option', content: iconOption, style: 'default', color: 'fill-grey'}, optionProtocol('filter-option'))
+    const optionAction = bel`<div class="${css.action} ${css.option}">${filterOption}</div>`
+    // filter option
+    const optionList = bel`<ul class="${css['option-list']}" onclick=${(e) => actionOptionList(e)}></ul>`
+    // get lits
+    const statusList = optionListRender(data).then( buttons => {
+        buttons.map( item => { 
+            const li = bel`<li>${item}</li>`
+            optionList.append(li) 
+        })
+        return buttons
+    })
+
+    window.addEventListener('DOMContentLoaded', () => {
+        document.body.addEventListener('click', (event) => {
+            const target = event.target
+            // * if target is same as filterOption, then keep optionList opening
+            if (target === filterOption) return
+            // * find css name first of filterOption button
+            let style = [...filterOption.classList].filter( className => className.includes('active'))
+            // if class name condition is true
+            if (filterOption.classList.contains(style)) {
+                // * remove optionList when add css.hide
+                // ! cannot use function to repeat using, because it's loaded from document.body
+                // ! cannot read page, flow, name properties
+                optionList.classList.add(css.hide)
+                setTimeout( () => optionList.remove(), 500)
+                /* 
+                * filter-option button needs to send 'remove-active' for 
+                * main component and button component to check recipients[from].state 
+                * and remove active status 
+                */
+                recipients[name]({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'remove-active', filename, line: 50})
+                return send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'remove-active', filename, line: 51})
+            }
+        })
+    })
+
+    return optionAction
+
+    /*************************
+    * ------- Actions --------
+    *************************/
+    function actionOptionList (event) {
+        event.stopPropagation()
+        const target = event.target
+        const classList = [...target.classList]
+        const listStyle = classList.filter( style => style.includes('btn'))
+        if (!target.classList.contains(listStyle)) return
+        // for recipients[name] using
+        const name = `option-${target.innerText.toLowerCase().split(' ').join('')}`
+        // if icon is not contained css.hide then do toggling it on unchecked/checked 
+        const type = target.classList.contains(css.checked) ? 'unchecked' : 'checked'
+        target.classList.toggle(css.checked)
+        const message = {page: 'demo', from: target.innerText, flow: `${flow}/option-list`, type, body: name, filename, line: 72}
+        return send2Parent(message)
+    }
+
+    function displayOptionList (message) {
+        const {page, from, flow, type, body, action} = message
+        let log = {page, from, flow, type: 'active', body, filename, line: 78}
+        recipients[from](log)
+        optionAction.append(optionList)
+        if (optionList.children.length > 0) optionList.classList.remove(css.hide)
+        return send2Parent(log)
+    }
+
+    function hideOptionList (message) {
+        const {page, from, flow, type, body, action} = message
+        let log = {page, from, flow, type, body, filename, line: 87}
+        recipients[from](log)
+        optionList.classList.add(css.hide)
+        // remove optionList when add css.hide
+        optionList.classList.add(css.hide)
+        setTimeout( () => optionList.remove(), 500)
+        return send2Parent(log)
+    }
+
+    function actionFilterOption (message) {
+        const { type } = message
+        if (type === 'self-active') displayOptionList(message)
+        if (type === 'remove-active') hideOptionList(message)
+    }
+
+    /*************************
+    * ------- Protocol --------
+    *************************/
+    function optionProtocol (name) {
+        return send => {
+            recipients[name] = send
+            return receive
+        }
+    }
+
+    /*************************
+    * ------ Receivers -------
+    *************************/
+    function receive (message) {
+        const {page, flow, from, type, action, body} = message
+        if (type === 'click') {
+            
+        }
+        if ( from === 'filter-option') actionFilterOption(message)
+        return send2Parent(message)
+    }
+
+    /*********************************
+    * ------ Promise() Element -------
+    *********************************/
+    async function optionListRender (data) {
+        return await new Promise((resolve, reject) => {
+            if (data === undefined) reject( )
+            const lists = data.map( item => {
+                let style
+                const check = svg( { css: `${css.icon} ${css['icon-check']} ${css.checked}`, path: 'assets/check.svg' })
+                if (item === 'Available') style = css.online
+                if (item === 'Not available') style = css.offline
+                if (item === 'Hypercore') style = css.core
+                if (item === 'Hyperdrive') style = css.drive
+                if (item === 'Cabal') style = css.cabal
+                const content = bel`<div class=${css.status}>${check}<span class="${css.circle} ${style}"></span>${item}</div>`
+                const btn = button({page, flow: flow ? `${flow}/${widget}` : widget, name: item, content, style: 'link', color: 'link-white', custom: [css.checked]}, optionProtocol(`option-${item.toLowerCase().split(' ').join('')}`))
+                return btn
+            })
+            return resolve(lists)
+        }).catch( err => { throw new Error(err)} )
+    }
+}
+
+const css = csjs`
+.option {
+    position: relative;
+    display: grid;
+    justify-items: right;
+    width: 150px;
+}
+.option > button[class^="btn"] {
+    position: relative;
+    z-index: 3;
+    margin-right: 0;
+}
+.option-list {
+    position: absolute;
+    z-index: 2;
+    right: 0;
+    width: 100%;
+    animation: showup .25s linear forwards;
+}
+.option-list, .option-list li  { 
+    margin: 0; 
+    padding: 0;
+    list-style: none;
+}
+.option-list li > button {
+    background-color: #000;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    text-align: left;
+    transition: background-color 0.3s linear;
+}
+.option-list li:first-child > button {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+.option-list li:last-child > button {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+.option-list li > button:hover {
+    color: #fff;
+    background-color: #666;
+}
+.option-list li > button .icon-check {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s linear;
+}
+.option-list .icon-check svg path {
+    stroke: #fff;
+}
+.option-list li > button.checked .icon-check {
+    opacity: 1;
+}
+.status {
+    display: grid;
+    grid-template-rows: 32px;
+    grid-template-columns: 18px 27px auto;
+    padding: 0 10px;
+    align-items: center;
+    pointer-events: none;
+}
+.circle {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #000;
+    justify-self: center;
+    pointer-events: none;
+}
+.online {
+    background-color: #109B36;
+}
+.offline {
+    background-color: #D9D9D9;
+}
+.core {
+    background-color: #BCE0FD;
+}
+.drive {
+    background-color: #FFDFA2;
+}
+.cabal {
+    background-color: #E9D3FD;
+}
+.icon {
+    width: 16px;
+    pointer-events: none;
+}
+.icon-check {}
+.icon-option {}
+.hide {
+    animation: disappear .25s linear forwards;
+}
+@keyframes showup {
+    0% {
+        opacity: 0;
+        top: 45px;
+    }
+    100% {
+        opacity: 1;
+        top: 53px;
+    }
+}
+@keyframes disappear {
+    0% {
+        opacity: 1;
+        top: 53px;
+    }
+    100% {
+        opacity: 0;
+        top: 45px;
+    }
+}
+`
+}).call(this)}).call(this,"/node_modules/datdot-ui-filter-option/src/index.js")
+},{"bel":3,"csjs-inject":6,"datdot-ui-button":23,"datdot-ui-graphic":25,"path":29}],25:[function(require,module,exports){
 module.exports = svg
 
 function svg(opts) {
@@ -1140,7 +1433,7 @@ function svg(opts) {
     
     return el
 }   
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -1161,7 +1454,7 @@ function attributeToProperty (h) {
   }
 }
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var attrToProp = require('hyperscript-attribute-to-property')
 
 var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
@@ -1458,7 +1751,7 @@ var closeRE = RegExp('^(' + [
 ].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
 function selfClosing (tag) { return closeRE.test(tag) }
 
-},{"hyperscript-attribute-to-property":25}],27:[function(require,module,exports){
+},{"hyperscript-attribute-to-property":26}],28:[function(require,module,exports){
 var inserted = {};
 
 module.exports = function (css, options) {
@@ -1482,7 +1775,7 @@ module.exports = function (css, options) {
     }
 };
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 (function (process){(function (){
 // .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
 // backported and transplited with Babel, with backwards-compat fixes
@@ -1788,7 +2081,7 @@ var substr = 'ab'.substr(-1) === 'b'
 ;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":29}],29:[function(require,module,exports){
+},{"_process":30}],30:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -1974,7 +2267,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 
@@ -2052,7 +2345,7 @@ const css = csjs`
 }
 .info {}
 `
-},{"bel":3,"csjs-inject":6}],31:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6}],32:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
@@ -2061,6 +2354,7 @@ const filename = path.basename(__filename)
 const button = require('datdot-ui-button')
 const svg = require('datdot-ui-graphic')
 const searchResult = require('search-result')
+const option = require('datdot-ui-filter-option')
 
 module.exports = autocomplete
 
@@ -2068,20 +2362,19 @@ function autocomplete ({page, flow, name, data}, protocol) {
     const widget = 'ui-autocomplete'
     let recipients = []
     let val
+    let optionList = { unchecked: [], checked: ['Available', 'Not available', 'Hypercore', 'Hyperdrive', 'Cabal']}
     const send2Parent = protocol( receive )
     const iconClear = svg({css: `${css.icon} ${css['icon-clear']}`, path: 'assets/cancel.svg'})
-    const iconOption = svg({css: `${css.icon} ${css['icon-option']}`, path: 'assets/option.svg'})
     const clear = button({page, name: 'clear', content: iconClear, style: ['circle-solid', 'small'], color: 'light-grey', custom: [css.clear]}, clearProtocol('clear'))
     const input = bel`<input type="text" class=${css['search-input']} name=${name} role="search input" aria-label="search input" tabindex=0>`
     const controlForm = bel`<div class=${css['control-form']}>${input}</div>`
     const list = searchResult({page, name: 'swarm', data}, searchResultProtocol('swarm-key-result'))
     const search = bel`<div role="search" class=${css.search} aria-label="search">${controlForm}${list}</div>`
     // option dropdown
-    const option = button({page, name: 'option', content: iconOption, style: 'default', color: 'fill-grey', custom: [css.option]}, optionProtocol('option'))
-    const action = bel`<aside class=${css.action}>${option}</aside>`
+    const action = bel`<aside class=${css.action}>${option({page, flow, name: 'filter-option', data: optionList.checked}, optionProtocol('filter-option'))}</aside>`
     list.append(action)
 
-    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 28})
+    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 29})
     
     // search.onclick = handleClick
     input.onfocus = handleFocus
@@ -2093,7 +2386,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
 
     function publish (string) {
         list.classList.add(css.hide)
-        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 40 })
+        return send2Parent({page, from: `${widget}/search filter`, type: 'publish data', body: string, filename, line: 41 })
     }
 
     function searchFilter (string) {
@@ -2131,7 +2424,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
         controlForm.insertBefore(span, input)
         controlForm.append(clear)
         list.classList.add(css.hide)
-        send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 77})
+        send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 79})
     }
 
     function searchResultProtocol (name) {
@@ -2150,13 +2443,111 @@ function autocomplete ({page, flow, name, data}, protocol) {
             return function receiveOption (message) {
                 const { page, from, flow, type, action, body, filename, line } = message
                 // received message from clear button
-                if (type === 'click') handleOption(name)
+                send2Parent(message)
+                if (type === 'click') {
+                    if (from === 'filter-option') return activeOption(message)
+                }
+                // close dropdown menu of filter-option  when document.body clicked
+                if (type === 'remove-active') {
+                    return recipients[from].state = type
+                }
+                if (type === 'unchecked') {
+                    // handle chekced status
+                    const result = optionList.checked.reduce( (acc, currentValue) => {
+                        if (from === currentValue) {
+                            const index = optionList.checked.indexOf(from)
+                            optionList.unchecked.push(from)
+                            optionList.checked.splice(index, 1)
+                        }
+                        acc = optionList.checked
+                        return acc
+                    }, [])
+
+                    data.then( res => {
+                        let feeds
+                        // * convert the characters to lowercase 
+                        const convertResult = result.map( status => status.toLowerCase() )
+                        // * filter match result
+                        const filterResult = res.filter( obj => convertResult.includes( obj.type ) )
+
+                        if (result.includes('Available') && result.includes('Not available')) {
+                            feeds = [...online( filterResult ), ...offline( filterResult )]
+                        } else if (result.includes('Available')) {
+                            feeds = online( filterResult )
+                        } else if (result.includes('Not available')) {
+                            feeds = offline( filterResult )
+                        }
+                        console.log('from unchecked', feeds);
+                        return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter-option', body: {data: feeds}})
+                    })
+                }
+                if (type === 'checked') {
+                    // handle unchecked status
+                    const result = optionList.unchecked.reduce( (acc, currentValue) => {
+                        if (from === currentValue) {
+                            const index = optionList.unchecked.indexOf(from)
+                            optionList.checked.push(from)
+                            optionList.unchecked.splice(index, 1)
+                        }
+                        acc = optionList.checked
+                        return acc
+                    }, [])
+                    
+                    data.then( res => {
+                        let feeds
+                        // * convert the characters to lowercase 
+                        const convertResult = result.map( status => status.toLowerCase() )
+                        // * filter match result
+                        const filterResult = res.filter( obj => convertResult.includes( obj.type ) )
+
+                        if (result.includes('Available') && result.includes('Not available')) {
+                            feeds = [...online( filterResult ), ...offline( filterResult )]
+                        } else if (result.includes('Available')) {
+                            feeds = online( filterResult )
+                        } else if (result.includes('Not available')) {
+                            feeds = offline( filterResult )
+                        }
+                        console.log('from checked', feeds );
+                        return recipients['swarm-key-result']({page, from: 'search filter', type: 'filter-option', body: {data: feeds}})
+                    })
+                }
             }
         }
     }
 
-    function handleOption (name) {
-        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'click', filename, line: 103})
+    function filterResult (status) {
+        data.then( args => {
+            // status available
+            const available = online(args)
+            // status not available
+            const notAvailable = offline(args)
+            // hypercore
+            const coreList = args.filter( obj => obj.type === 'hypercore' )
+            // hyperdrive
+            const driveList = args.filter( obj => obj.type === 'hyperdrive' )
+            // cabal
+            const cabalList = args.filter( obj => obj.type === 'cabal' )
+    
+            const result = offline(driveList)
+            return result
+        }).then( res => console.log( res ) )
+    }
+
+    function online(args) {
+        return args.filter(obj => obj.feeds.find( feed => feed.match(/https/ig) ) )
+    }
+
+    function offline(args) {
+        return args.filter(obj => !obj.feeds.find( feed => feed.match(/https/ig) ) )
+    }
+
+    function activeOption (message) {
+        const { page, from, flow } = message
+        let state = recipients[from].state
+        if (state === undefined) recipients[from].state = 'self-active'
+        if (state === 'self-active') recipients[from].state = 'remove-active'
+        if (state === 'remove-active') recipients[from].state = 'self-active'
+        recipients[from]({page, from, flow, type: recipients[from].state, filename, line: 113})
     }
 
     function clearProtocol (name) {
@@ -2284,6 +2675,19 @@ const css = csjs`
 .icon-option {
     width: 24px;
 }
+.hide {
+    animation: disppear .5s linear forwards;
+}
+@keyframes disppear {
+    0% {
+        opacity: 1;
+        top: 53px;
+    }
+    100% {
+        opacity: 0;
+        top: 45px;
+    }
+}
 @keyframes showup {
     0% {
         opacity: 0;
@@ -2302,7 +2706,7 @@ const css = csjs`
 }
 `
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"datdot-ui-button":23,"datdot-ui-graphic":24,"path":28,"search-result":32}],32:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"datdot-ui-button":23,"datdot-ui-filter-option":24,"datdot-ui-graphic":25,"path":29,"search-result":33}],33:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 

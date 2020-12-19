@@ -28,6 +28,7 @@
     "budo": "^11.6.4",
     "csjs-inject": "^1.0.1",
     "datdot-ui-button": "github:fionataeyang/datdot-ui-button",
+    "datdot-ui-filter-option": "github:fionataeyang/datdot-ui-filter-option",
     "datdot-ui-graphic": "github:fionataeyang/datdot-ui-graphic"
   },
   "devDependencies": {
