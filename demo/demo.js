@@ -15,7 +15,7 @@ function demoComponent () {
     const container = wrap(searchBox, terminal)
     return container
 
-    function wrap (content) {
+    function wrap (content, terminal) {
         const container = bel`
         <div class=${css.wrap}>
             <section class=${css.container}>
@@ -25,6 +25,10 @@ function demoComponent () {
         </div>
         `
         return container
+    }
+
+    function renderPublish (message) {
+        showLog({...message, filename, line: 31})
     }
 
     function protocol (name) {
@@ -38,8 +42,9 @@ function demoComponent () {
         const { page, from, flow, type, action, body } = message
         // console.log(`DEMO <= ${page}/${from} ${type}` );
         showLog(message)
-        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: 41})
+        if (type === 'init') return showLog({page, from, flow, type: 'ready', body, filename, line: 45})
         if (type === 'clear search') return 
+        if (type === 'publish') return renderPublish(message)
     }
 
     // keep the scroll on bottom when the log displayed on the terminal
@@ -55,7 +60,7 @@ function demoComponent () {
         const response = await fetch(path)  
         if ( response.ok ) return response.json().then(data => data)
         if ( response.status === 404 ) {
-            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 58})
+            sendMessage({page: 'demo', from: 'data', flow: 'getData', type: 'error', body: `GET ${response.url} 404 (not found)`, filename, line: 63})
             .then( log => terminal.append(log) )
             // throw new Error(`Failed load file from ${response.url}`)
         }
