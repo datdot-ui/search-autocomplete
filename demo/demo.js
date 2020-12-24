@@ -99,7 +99,8 @@ body {
     grid-template-rows: 75vh 25vh;
 }
 .container {
-    width: 500px;
+    width: 80%;
+    max-width: 98%;
     margin: 20px auto 0 auto;
 }
 .terminal {

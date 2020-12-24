@@ -10,8 +10,11 @@ const filterOption = require('datdot-ui-filter-option')
 module.exports = autocomplete
 
 function autocomplete ({page, flow, name, data}, protocol) {
+    // * navigator.platform display: iPad, iPhone, MacIntel ...etc
+    // alert(navigator.platform) it is only work for real platform, simulator is only displaying current OS name
+    // * navigator.userAgent display: iPhone, iPad, iPod ...etc
+    const device =  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'laptop/desktop'
     const search = bel`<div role="search" class=${css.search} aria-label="search"></div>`
-
     data.then( args => {
         let arr = []
         arr = [...args]
@@ -24,7 +27,13 @@ function autocomplete ({page, flow, name, data}, protocol) {
         const widget = 'ui-autocomplete'
         const send2Parent = protocol( receive )
         let recipients = []
-        let optionList = { unchecked: [], checked: ['Available', 'Not available', 'Hypercore', 'Hyperdrive', 'Cabal']}
+        let optionList = [
+            {id: 1, status: "Available", active: true}, 
+            {id: 2, status: "Not available", active: true}, 
+            {id: 3, status: "Hypercore", active: true},
+            {id: 4, status: "Hyperdrive", active: true},
+            {id: 5, status: "Cabal", active: true}
+        ]
         let val
         let feeds = data
         const iconClear = svg({css: `${css.icon} ${css['icon-clear']}`, path: 'assets/cancel.svg'})
@@ -33,11 +42,11 @@ function autocomplete ({page, flow, name, data}, protocol) {
         const controlForm = bel`<div class=${css['control-form']}>${input}</div>`
         const list = searchResult({page, name: 'swarm', data: feeds}, searchResultProtocol('swarm-key-result'))
         // option dropdown
-        const option = filterOption({page, flow, name: 'filter-option', data: optionList.checked}, optionProtocol('filter-option'))
+        const option = filterOption({page, flow, name: 'filter-option', data: optionList}, optionProtocol('filter-option'))
         const action = bel`<aside class=${css.action}>${option}</aside>`
 
         list.append(action)
-        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 40 })
+        send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 49 })
         
         input.onfocus = handleFocus
         input.onblur = handleBlur
@@ -75,16 +84,13 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }
             list.classList.add(css.hide)
             recipients['swarm-key-result']({page, from: 'search filter', flow: widget, type: 'publish', body: string })
-            return send2Parent({page, from: 'search filter', flow: widget, type: 'publish', body: string, filename, line: 55 })
+            return send2Parent({page, from: 'search filter', flow: widget, type: 'publish', body: string, filename, line: 87 })
         }
 
         function searchFilter (string) {
-            // Available and Not available are not checked, keep search result opening
-            if (optionList.unchecked.includes('Available') && optionList.unchecked.includes('Not available')) return
-            // Hypercore, Hyperdrive and Cabal are not checked, keep search result opening
-            if (optionList.unchecked.includes('Hypercore') && optionList.unchecked.includes('Hyperdrive') && optionList.unchecked.includes('Cabal')) return
-            // Available or No available is checked
-            if (optionList.checked.includes('Available') || optionList.checked.includes('Not available')) return filterFeeds(feeds, string)
+            optionList.forEach( item => {
+                if (item.active) return filterFeeds(feeds, string)
+            })
         }
 
         function filterFeeds(args, string) {
@@ -135,7 +141,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             controlForm.classList.add(css.selected)
             controlForm.insertBefore(span, input)
             recipients['swarm-key-result']({page, from: 'feeds list', type: 'selected', body:obj})
-            send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 115 })
+            send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 144 })
         }
 
         function online(args) {
@@ -146,20 +152,45 @@ function autocomplete ({page, flow, name, data}, protocol) {
             return args.filter(obj => !obj.feeds.find( feed => feed.match(/https/ig) ) )
         }
 
+        function actionToggleCheck (message) {
+            const { body } = message
+            optionList.map( item => { 
+                // * better to use return item for add more conditions
+                if (item.id === body ) return item.active = !item.active
+            })
+            send2Parent({...message, filename, line: 161})
+            return filterResult(optionList)
+        }
+
+        function filterResult(args) {
+            let result
+            args.filter( option => option.active === true)
+                        .map( (option, index, arr) => {
+                            if (arr.length >= 5 && option.id === 1 || arr.length >= 5 && option.id === 2) return result = [...online(data), ...offline(data)] 
+                            if (arr.length < 5 && option.id === 1) return result = online(data)
+                            if (arr.length < 5 && option.id === 2) return result = offline(data)
+                        })
+            feeds = result
+            recipients['swarm-key-result']({page, from: 'filter-option', flow, type: 'filter', body: {data: feeds}})
+            return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 175 })
+        }
+
         function activeOption (message) {
             const { page, from, flow } = message
             let state = recipients[from].state
             if (state === undefined) recipients[from].state = 'self-active'
             if (state === 'self-active') recipients[from].state = 'remove-active'
             if (state === 'remove-active') recipients[from].state = 'self-active'
-            recipients[from]({page, from, flow, type: recipients[from].state, filename, line: 132 })
+            recipients[from]({page, from, flow, type: recipients[from].state, filename, line: 184 })
         }
 
         function handleClearSearch (name) {
             val = ''
             input.value = val
             clear.classList.toggle(css.hide)
-            if ( !optionList.checked.includes('Available') && !optionList.checked.includes('Not available')) return
+            optionList.forEach( item => {
+                if (item.status === 'Available' && item.active === false && item.status === 'Not available' && item.active === false) return
+            })
             list.classList.remove(css.hide)
             setTimeout(()=> {
                 clear.classList.add(css.hide)
@@ -167,7 +198,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }, 300)
             statusElementRemove()
             removeError(controlForm)
-            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 146 })
+            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 201 })
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear', body: feeds})
         }
 
@@ -183,23 +214,23 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }
             searchFilter(val)
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: target.value })
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 161 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 217 })
         }
 
         function handleBlur (event) {
             const target = event.target
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 166 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 222 })
         }
 
         function handleFocus (event) {
             const target = event.target
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 171 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 227 })
         }
 
         function handleChange (event) {
             const target = event.target
             val = target.value
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 177 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 233 })
         }
 
         /*************************
@@ -222,73 +253,13 @@ function autocomplete ({page, flow, name, data}, protocol) {
                     const { page, from, flow, type, action, body, filename, line } = message
                     // received message from clear button
                     send2Parent(message)
-
                     if (type === 'click') {
                         if (from === 'filter-option') return activeOption(message)
                     }
-
                     // close dropdown menu of filter-option  when document.body clicked
                     if (type === 'remove-active') return recipients[from].state = type
-                    if (type === 'unchecked') {
-                        // handle chekced status
-                        const result = optionList.checked.reduce( (acc, currentValue) => {
-                            if (from === currentValue) {
-                                const index = optionList.checked.indexOf(from)
-                                optionList.unchecked.push(from)
-                                optionList.checked.splice(index, 1)
-                            }
-                            acc = optionList.checked
-                            return acc
-                        }, [])
-
-                        let getFeeds
-                        // * convert the characters to lowercase 
-                        const convertResult = result.map( status => status.toLowerCase() )
-                        // * filter match result
-                        const filterResult = data.filter( obj => convertResult.includes( obj.type ) )
-
-                        if (result.includes('Available') && result.includes('Not available')) {
-                            getFeeds = [...online( filterResult ), ...offline( filterResult )]
-                        } else if (result.includes('Available')) {
-                            getFeeds = online( filterResult )
-                        } else if (result.includes('Not available')) {
-                            getFeeds = offline( filterResult )
-                        }
-                        feeds = getFeeds
-                        recipients['swarm-key-result']({page, from: 'filter-option', flow, type: 'filter', body: {data: feeds}})
-                        return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 234 })
-                    }
-
-                    if (type === 'checked') {
-                        // handle unchecked status
-                        const result = optionList.unchecked.reduce( (acc, currentValue) => {
-                            if (from === currentValue) {
-                                const index = optionList.unchecked.indexOf(from)
-                                optionList.checked.push(from)
-                                optionList.unchecked.splice(index, 1)
-                            }
-                            acc = optionList.checked
-                            return acc
-                        }, [])
-                        
-                        let getFeeds
-                        // * convert the characters to lowercase 
-                        const convertResult = result.map( status => status.toLowerCase() )
-                        // * filter match result
-                        const filterResult = data.filter( obj => convertResult.includes( obj.type ) )
-
-                        if (result.includes('Available') && result.includes('Not available')) {
-                            getFeeds = [...online( filterResult ), ...offline( filterResult )]
-                        } else if (result.includes('Available')) {
-                            getFeeds = online( filterResult )
-                        } else if (result.includes('Not available')) {
-                            getFeeds = offline( filterResult )
-                        }
-                        feeds = getFeeds
-                        recipients['swarm-key-result']({page, from: 'filter-option', flow, type: 'filter', body: {data: feeds}})
-                        return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 264 })
-                        
-                    }
+                    if (type === 'unchecked') return actionToggleCheck(message)
+                    if (type === 'checked') return actionToggleCheck(message)
                 }
             }
         }
@@ -369,12 +340,11 @@ const css = csjs`
 .hide {
     animation: disppear .5s linear forwards;
 }
-.publish {
-
-}
+.publish {}
 .error {
     background-color: #FFEAE8;
 }
+
 @keyframes disppear {
     0% {
         opacity: 1;
