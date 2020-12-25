@@ -153,26 +153,56 @@ function autocomplete ({page, flow, name, data}, protocol) {
         }
 
         function actionToggleCheck (message) {
-            const { body } = message
-            optionList.map( item => { 
-                // * better to use return item for add more conditions
-                if (item.id === body ) return item.active = !item.active
-            })
-            send2Parent({...message, filename, line: 161})
-            return filterResult(optionList)
+            const { from, body } = message
+            let on, off
+            let result = []
+            let options = optionList.map( item => { 
+                                        // * better to use return item for add more conditions
+                                        if (item.id === body ) item.active = !item.active
+                                        if (/^Available/.test(item.status) && item.active ) on = online(data)
+                                        if (/^Not available/.test(item.status) && item.active ) off = offline(data)
+                                        return item
+                                    }).map( item => {
+                                        if (/core/i.test(item.status) && item.active) {
+                                            let arr = data.filter( obj => /core/i.test(obj.type))
+                                            console.log('core', arr);
+                                            return result.push(...arr)
+                                        }
+                                        if (/drive/i.test(item.status) && item.active) {
+                                            let arr = data.filter( obj => /drive/i.test(obj.type)) 
+                                            console.log('drive', arr )
+                                            return result.push(...arr)
+                                        }
+                                        if (/cabal/i.test(item.status) && item.active) {
+                                            let arr = data.filter( obj => /cabal/i.test(obj.type))
+                                            console.log('cabal', arr )
+                                            return result.push(...arr)
+                                        }
+                                        return item
+                                    })
+
+            result.sort( (a, b) => a.id - b.id)
+
+            if (on === undefined && off === undefined) return filterResult(undefined)
+            if (on !== undefined && off !== undefined) { 
+                if (result !== undefined) return filterResult(result)
+                return filterResult(data)
+            }
+            if (on !== undefined && off === undefined) { 
+                if (result !== undefined) on = online(result)
+                return filterResult(on)
+            }
+            if (on === undefined && off !== undefined) {
+                if (result !== undefined) off = offline(result)
+                return filterResult(off)
+            }
+            send2Parent({...message, filename, line: 199})
         }
 
-        function filterResult(args) {
-            let result
-            args.filter( option => option.active === true)
-                        .map( (option, index, arr) => {
-                            if (arr.length >= 5 && option.id === 1 || arr.length >= 5 && option.id === 2) return result = [...online(data), ...offline(data)] 
-                            if (arr.length < 5 && option.id === 1) return result = online(data)
-                            if (arr.length < 5 && option.id === 2) return result = offline(data)
-                        })
+        function filterResult(result) {
             feeds = result
             recipients['swarm-key-result']({page, from: 'filter-option', flow, type: 'filter', body: {data: feeds}})
-            return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 175 })
+            return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 205 })
         }
 
         function activeOption (message) {
@@ -181,7 +211,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             if (state === undefined) recipients[from].state = 'self-active'
             if (state === 'self-active') recipients[from].state = 'remove-active'
             if (state === 'remove-active') recipients[from].state = 'self-active'
-            recipients[from]({page, from, flow, type: recipients[from].state, filename, line: 184 })
+            recipients[from]({page, from, flow, type: recipients[from].state, filename, line: 214 })
         }
 
         function handleClearSearch (name) {
@@ -198,7 +228,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }, 300)
             statusElementRemove()
             removeError(controlForm)
-            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 201 })
+            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 231 })
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear', body: feeds})
         }
 
@@ -214,23 +244,23 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }
             searchFilter(val)
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: target.value })
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 217 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 247 })
         }
 
         function handleBlur (event) {
             const target = event.target
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 222 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 252 })
         }
 
         function handleFocus (event) {
             const target = event.target
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 227 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 257 })
         }
 
         function handleChange (event) {
             const target = event.target
             val = target.value
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 233 })
+            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 263 })
         }
 
         /*************************

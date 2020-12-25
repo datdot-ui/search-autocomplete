@@ -96,7 +96,8 @@ body {
 .wrap {
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: 75vh 25vh;
+    grid-template-rows: 75% 25%;
+    height: 100%;
 }
 .container {
     width: 80%;
