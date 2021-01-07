@@ -34,7 +34,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             {id: 4, status: "Hyperdrive", active: true},
             {id: 5, status: "Cabal", active: true}
         ]
-        let val
+        let val, selectSwarm
         let feeds = data
         const iconClear = svg({css: `${css.icon} ${css['icon-clear']}`, path: 'assets/cancel.svg'})
         const clear = button({page, name: 'clear', content: iconClear, style: ['circle-solid', 'small'], color: 'light-grey', custom: [css.clear]}, clearProtocol('clear'))
@@ -64,7 +64,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
 
         function inValiadUrl (string) {
             controlForm.classList.add(css.error)
-            send2Parent({page, from: 'search filter', flow: flow ? `${flow}/${widget}` : widget, type: 'error', body: `${string} is a unvalidated URL of swarm key`})
+            return send2Parent({page, from: 'search filter', flow: flow ? `${flow}/${widget}` : widget, type: 'error', body: `${string} is a unvalidated URL of swarm key`})
         }
 
         function isValidUrl (string) {
@@ -134,6 +134,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             const span = bel`<span class="${css.status}${isValid ? ` ${css.isValid}` : '' }">`
             const statusElement = controlForm.querySelector(`.${css.status}`)
             input.value = `${type}://${swarm}`
+            selectSwarm = input.value
             if ( statusElement ) statusElement.remove()
             if (controlForm.children[2] === undefined) controlForm.append(clear)
             if (clear.classList.contains(css.hide)) clear.classList.remove(css.hide)
@@ -141,7 +142,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             controlForm.classList.add(css.selected)
             controlForm.insertBefore(span, input)
             recipients['swarm-key-result']({page, from: 'feeds list', type: 'selected', body:obj})
-            send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 144 })
+            return send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 145 })
         }
 
         function online(args) {
@@ -202,7 +203,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
         function filterResult(result) {
             feeds = result
             recipients['swarm-key-result']({page, from: 'filter-option', flow, type: 'filter', body: {data: feeds}})
-            return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 205 })
+            return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 206 })
         }
 
         function activeOption (message) {
@@ -211,7 +212,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             if (state === undefined) recipients[from].state = 'self-active'
             if (state === 'self-active') recipients[from].state = 'remove-active'
             if (state === 'remove-active') recipients[from].state = 'self-active'
-            recipients[from]({page, from, flow, type: recipients[from].state, filename, line: 214 })
+            recipients[from]({page, from, flow, type: recipients[from].state, filename, line: 215 })
         }
 
         function handleClearSearch (name) {
@@ -228,15 +229,16 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }, 300)
             statusElementRemove()
             removeError(controlForm)
-            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 231 })
+            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 232 })
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear', body: feeds})
         }
 
         function handleKey (event) {
             const target = event.target
             val = target.value
-            if ( !controlForm.querySelector(`.${css.clear}`) ) controlForm.append(clear)
-            clear.classList.remove(css.hide)
+            if (selectSwarm.includes(val) && target.value.length < selectSwarm.length ) statusElementRemove()
+            if (!controlForm.querySelector(`.${css.clear}`)) controlForm.append(clear)
+            if (clear.classList.contains(css.hide)) clear.classList.remove(css.hide)
             if (val === '' ) {
                 controlForm.removeChild(clear)
                 removeError(controlForm)
@@ -244,23 +246,23 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }
             searchFilter(val)
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: target.value })
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 247 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 249 })
         }
 
         function handleBlur (event) {
             const target = event.target
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 252 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 254 })
         }
 
         function handleFocus (event) {
             const target = event.target
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 257 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 259 })
         }
 
         function handleChange (event) {
             const target = event.target
             val = target.value
-            send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 263 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 265 })
         }
 
         /*************************
@@ -343,6 +345,7 @@ const css = csjs`
     animation: showup .15s linear forwards;
 }
 .hide {
+    pointer-events: none;
     animation: disppear .15s linear forwards;
 }
 .icon {}
