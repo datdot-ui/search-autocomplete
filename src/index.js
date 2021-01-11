@@ -53,6 +53,15 @@ function autocomplete ({page, flow, name, data}, protocol) {
         input.onchange = handleChange
         input.onkeyup = handleKey
 
+        // display hide list or show list
+        document.body.addEventListener('click', (event) => {
+            const target = event.target
+            // console.log( target.parentNode );
+            if (list.classList.contains(css.hide) || target.name === 'create-plan') return
+            if (target === input || target.parentNode === option || target === clear) return list.classList.remove(css.hide)
+            else list.classList.add(css.hide)
+        })
+
         return search.append(controlForm, list) 
     
         /*************************
@@ -84,7 +93,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }
             list.classList.add(css.hide)
             recipients['swarm-key-result']({page, from: 'search filter', flow: widget, type: 'publish', body: string })
-            return send2Parent({page, from: 'search filter', flow: widget, type: 'publish', body: string, filename, line: 87 })
+            return send2Parent({page, from: 'search filter', flow: widget, type: 'publish', body: string, filename, line: 99 })
         }
 
         function searchFilter (string) {
@@ -142,7 +151,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             controlForm.classList.add(css.selected)
             controlForm.insertBefore(span, input)
             recipients['swarm-key-result']({page, from: 'feeds list', type: 'selected', body:obj})
-            return send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 145 })
+            return send2Parent({page, from: 'feeds list', flow: flow ? `${flow}/${widget}` : widget, type: 'selected', body: obj, filename, line: 157 })
         }
 
         function online(args) {
@@ -203,7 +212,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
         function filterResult(result) {
             feeds = result
             recipients['swarm-key-result']({page, from: 'filter-option', flow, type: 'filter', body: {data: feeds}})
-            return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 206 })
+            return send2Parent({page, from: 'filter-option', flow, type: 'filter', body: feeds ? `${feeds.length} feeds` : `feeds not found`, filename, line: 218 })
         }
 
         function activeOption (message) {
@@ -229,7 +238,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }, 300)
             statusElementRemove()
             removeError(controlForm)
-            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 232 })
+            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 244 })
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear', body: feeds})
         }
 
@@ -248,23 +257,24 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }
             searchFilter(val)
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: target.value })
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 249 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 263 })
         }
 
         function handleBlur (event) {
             const target = event.target
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 254 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 268 })
         }
 
         function handleFocus (event) {
             const target = event.target
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 259 })
+            if (list.classList.contains(css.hide)) list.classList.remove(css.hide)
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 273 })
         }
 
         function handleChange (event) {
             const target = event.target
             val = target.value
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 265 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 279 })
         }
 
         /*************************
