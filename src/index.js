@@ -236,7 +236,9 @@ function autocomplete ({page, flow, name, data}, protocol) {
         function handleKey (event) {
             const target = event.target
             val = target.value
-            if (selectSwarm.includes(val) && target.value.length < selectSwarm.length ) statusElementRemove()
+            if (selectSwarm !== undefined ) {
+                if (selectSwarm.includes(val) && target.value.length < selectSwarm.length ) statusElementRemove()
+            }
             if (!controlForm.querySelector(`.${css.clear}`)) controlForm.append(clear)
             if (clear.classList.contains(css.hide)) clear.classList.remove(css.hide)
             if (val === '' ) {
