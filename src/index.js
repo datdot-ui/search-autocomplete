@@ -58,8 +58,12 @@ function autocomplete ({page, flow, name, data}, protocol) {
             const target = event.target
             // console.log( target.parentNode );
             if (list.classList.contains(css.hide) || target.name === 'create-plan') return
-            if (target === input || target.parentNode === option || target === clear) return list.classList.remove(css.hide)
-            else list.classList.add(css.hide)
+            if (target === input || target.parentNode === option || target === clear)  {
+                list.classList.remove(css.hide)
+                return list.removeAttribute('disabled')
+            }
+            list.classList.add(css.hide)
+            list.setAttribute('disabled', true)
         })
 
         return search.append(controlForm, list) 

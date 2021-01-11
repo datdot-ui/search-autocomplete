@@ -2418,8 +2418,12 @@ function autocomplete ({page, flow, name, data}, protocol) {
             const target = event.target
             // console.log( target.parentNode );
             if (list.classList.contains(css.hide) || target.name === 'create-plan') return
-            if (target === input || target.parentNode === option || target === clear) return list.classList.remove(css.hide)
-            else list.classList.add(css.hide)
+            if (target === input || target.parentNode === option || target === clear)  {
+                list.classList.remove(css.hide)
+                return list.removeAttribute('disabled')
+            }
+            list.classList.add(css.hide)
+            list.setAttribute('disabled', true)
         })
 
         return search.append(controlForm, list) 
@@ -2798,7 +2802,8 @@ function searchResult ({page, flow = null, name = 'search result', data}, protoc
 
     return element
 
-    function click (obj) {
+    function click (event, obj) {
+        event.stopPropagation()
         return send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'click', body: obj})
     }
 
@@ -2821,7 +2826,7 @@ function searchResult ({page, flow = null, name = 'search result', data}, protoc
         return args.map( obj => {     
             const type = obj.type === 'hypercore' ? 'core' : obj.type === 'hyperdrive' ? 'drive' : 'cabal'
             let li = bel`
-            <li role=${obj.type} arial-label="${obj.swarm}" onclick=${ () => click({...obj, isValid: isValidFeeds(obj.feeds)}) }>
+            <li role=${obj.type} arial-label="${obj.swarm}" onclick=${ (event) => click(event, {...obj, isValid: isValidFeeds(obj.feeds)}) }>
                 <span class="${css.status}${isValidFeeds(obj.feeds) ? ` ${css.isValid}` : ''}"></span>
                 <span class="${css.badge} ${css[type]}">${type}</span>
                 <span class=${css.feed}>${highlight(keyword, obj.swarm)}</span>
