@@ -81,6 +81,7 @@ function demoComponent () {
 
 const css = csjs`
 html {
+    font-size: 62.5%;
     box-sizing: border-box;
     height: 100%;
 }
@@ -91,7 +92,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 14px;
+    font-size: 100%;
     background-color: rgba(0, 0, 0, .1);
     height: 100%;
 }
@@ -1393,6 +1394,17 @@ const css = csjs`
 .icon-option {}
 .hide {
     animation: disappear .25s linear forwards;
+}
+@media screen and (max-width: 503px) {
+    .option button {
+        background-color: rgba(0, 0, 0, .15);
+    }
+    .option button[class*='active'] {
+        background-color: rgba(0, 0, 0, 1);
+    }
+    .option button svg g {
+        fill: rgba(255,255,255, 1);
+    }
 }
 @keyframes showup {
     0% {
@@ -2909,8 +2921,12 @@ const css = csjs`
     padding: 0;
 }
 .feeds li {
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 20px 52px auto;
+    align-items: center;
     padding: 8px 10px;
-    line-height: 16px;
+    font-size: 1.4rem;
     cursor: pointer;
     transition: background-color 0.45s ease-in-out;
 }
@@ -2933,6 +2949,7 @@ const css = csjs`
     padding: 2px 8px;
     text-align: center;
     margin-right: 5px;
+    max-height: 20px;
 }
 .core {
     background-color: #BCE0FD;
@@ -2946,13 +2963,22 @@ const css = csjs`
 .feed {
     overflow-wrap: break-word;
     word-break: break-all;
-    line-height: 24px;
+    line-height: 20px;
 }
 .hide {
     display: none;
 }
 .highlight {
     background-color: #FFEEAF;
+}
+@media screen and (max-width: 503px) {
+    .feeds li {
+        padding: 6px 10px;
+        align-items: flex-start;
+    }
+    .status {
+        margin-top: 5px;
+    }
 }
 `
 },{"bel":3,"csjs-inject":6}]},{},[1]);

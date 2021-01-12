@@ -79,6 +79,7 @@ function demoComponent () {
 
 const css = csjs`
 html {
+    font-size: 62.5%;
     box-sizing: border-box;
     height: 100%;
 }
@@ -89,7 +90,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: Arial, Helvetica, sans-serif;
-    font-size: 14px;
+    font-size: 100%;
     background-color: rgba(0, 0, 0, .1);
     height: 100%;
 }
