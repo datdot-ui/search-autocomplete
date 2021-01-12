@@ -895,24 +895,18 @@ function button ({page, flow = null, name, content, style, color, custom, curren
         return state = update
     }
 
-    function toggleActive (boolean, message) {
+    function toggleActive (isActive, message) {
         const { page, from, flow } = message
-        if (boolean) {
-            let newState = setState('self-active')
-            send2Parent({page, flow, from, type: 'state', body: newState, filename, line: 51})
-            button.classList.add(css.active)
-        } else {
-            let newState = setState('remove-active')
-            send2Parent({page, flow, from, type: 'state', body: newState, filename, line: 55})
-            button.classList.remove(css.active)
-        }
-        
+        let newState = isActive ? setState('self-active') : setState('remove-active')
+        button.classList.toggle(css.active)
+        return send2Parent({page, flow, from, type: 'state', body: newState, filename, line: 51})
     }
 
     function receive(message) {
         const { type } = message
         // console.log('received from main component', message )
         if ( type === 'current-active' ) button.classList.add(css.current)
+        if ( type === 'remove-current' ) button.classList.remove(css.current)
         if ( type === 'disabled' ) button.setAttribute('disabled', true)
         if ( type === 'active' ) toggleActive(true, message)
         if ( type === 'remove-active' ) toggleActive(false, message)
@@ -930,7 +924,7 @@ const css = csjs`
     cursor: pointer;
     outline: none;
     overflow: hidden;
-    transition: background-color .3s, border .3s, color .3s ease-in-out;
+    transition: color .3s, background-color .3s, border .3s ease-in-out;
 }
 .btn svg g {
     transition: fill .3s linear;
@@ -1035,9 +1029,18 @@ const css = csjs`
     color: #fff;
     background-color: #333;
 }
+.dark svg g {
+    fill: #fff;
+}
+.dark.active {
+    background-color: #000;
+}
 .grey {
     color: #fff;
     background-color: #9A9A9A;
+}
+.grey svg g {
+    fill: #fff;
 }
 .white {
     color: #707070;
@@ -1046,6 +1049,9 @@ const css = csjs`
 .white:hover {
     color: #fff;
     background-color: #d3d3d3;
+}
+.white.active svg g {
+    fill: #fff;
 }
 .list {
     color: #707070;
@@ -1095,7 +1101,7 @@ svg {
     padding-top: 2px;
 }
 .btn[disabled], .btn[disabled]:hover {
-    color: #fff;
+    color: #a9a9a9;
     background-color: rgba(217, 217, 217, 1);
     cursor: not-allowed;
 }
@@ -1133,6 +1139,19 @@ svg {
     color: #fff;
     background-color: #000;
 }
+.tab {
+    padding: 15px;
+    background-color: #D9D9D9;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin-right: 2px;
+    color: #000;
+    cursor: pointer;
+    text-transform: capitalize;
+}
+.tab.current {
+    background-color: #fff;
+}
 @keyframes ripples {
     0% {
         width: 0px;
@@ -1166,7 +1185,7 @@ function filterOption ({page, flow, name, data}, protocol) {
     // icon
     const iconOption = svg( { css: `${css.icon} ${css['icon-option']}`, path: 'assets/option.svg' })
     // button
-    const filterOption = button({page, flow: flow ? `${flow}/${widget}` : widget,  name: 'filter-option', content: iconOption, style: 'default', color: 'fill-grey'}, optionProtocol('filter-option'))
+    const filterOption = button({page, flow: flow ? `${flow}/${widget}` : widget,  name: 'filter-option', content: iconOption, style: 'default', color: 'white'}, optionProtocol('filter-option'))
     const optionAction = bel`<div class="${css.action} ${css.option}">${filterOption}</div>`
     // filter option
     const optionList = bel`<ul class="${css['option-list']}" onclick=${(e) => actionOptionList(e)}></ul>`
@@ -1306,10 +1325,13 @@ const css = csjs`
     display: grid;
     justify-items: right;
 }
-.option > button[class^="btn"] {
-    position: relative;
-    z-index: 3;
-    margin-right: 0;
+.option > button[name^="filter-option"] {
+    padding: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 .option-list {
     position: absolute;
@@ -1394,17 +1416,6 @@ const css = csjs`
 .icon-option {}
 .hide {
     animation: disappear .25s linear forwards;
-}
-@media screen and (max-width: 503px) {
-    .option button {
-        background-color: rgba(0, 0, 0, .15);
-    }
-    .option button[class*='active'] {
-        background-color: rgba(0, 0, 0, 1);
-    }
-    .option button svg g {
-        fill: rgba(255,255,255, 1);
-    }
 }
 @keyframes showup {
     0% {
@@ -2417,7 +2428,6 @@ function autocomplete ({page, flow, name, data}, protocol) {
         const option = filterOption({page, flow, name: 'filter-option', data: optionList}, optionProtocol('filter-option'))
         const action = bel`<aside class=${css.action}>${option}</aside>`
 
-        list.append(action)
         send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 49 })
         
         input.onfocus = handleFocus
@@ -2438,7 +2448,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             list.setAttribute('disabled', true)
         })
 
-        return search.append(controlForm, list) 
+        search.append(controlForm, action, list) 
     
         /*************************
         * ------- Actions --------
@@ -2710,6 +2720,10 @@ function autocomplete ({page, flow, name, data}, protocol) {
 const css = csjs`
 .search {
     position: relative;
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: auto 44px;
+    grid-gap: 5px;
 }
 .control-form {
     display: grid;
@@ -2726,6 +2740,8 @@ const css = csjs`
 }
 .search-input {
     width: 100%;
+    height: calc(100% - 28px);
+    max-height: 44px;
     font-size: 1.4rem;
     border: none;
     outline: none;
@@ -2755,9 +2771,8 @@ const css = csjs`
     background-color: #109B36;
 }
 .action {
-    position: absolute;
-    right: 5px;
-    top: 5px;
+    position: relative;
+    z-index: 99;
 }
 .icon-option {
     width: 24px;
@@ -2892,7 +2907,7 @@ const css = csjs`
     height: 360px;
     z-index: 9;
     left: 0;
-    margin-top: 5px;
+    top: 50px;
     display: grid;
     grid-template-rows: 1fr 27px;
     grid-template-columns: auto; 

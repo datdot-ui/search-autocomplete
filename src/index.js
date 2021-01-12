@@ -45,7 +45,6 @@ function autocomplete ({page, flow, name, data}, protocol) {
         const option = filterOption({page, flow, name: 'filter-option', data: optionList}, optionProtocol('filter-option'))
         const action = bel`<aside class=${css.action}>${option}</aside>`
 
-        list.append(action)
         send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 49 })
         
         input.onfocus = handleFocus
@@ -66,7 +65,7 @@ function autocomplete ({page, flow, name, data}, protocol) {
             list.setAttribute('disabled', true)
         })
 
-        return search.append(controlForm, list) 
+        search.append(controlForm, action, list) 
     
         /*************************
         * ------- Actions --------
@@ -338,6 +337,10 @@ function autocomplete ({page, flow, name, data}, protocol) {
 const css = csjs`
 .search {
     position: relative;
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: auto 44px;
+    grid-gap: 5px;
 }
 .control-form {
     display: grid;
@@ -354,6 +357,8 @@ const css = csjs`
 }
 .search-input {
     width: 100%;
+    height: calc(100% - 28px);
+    max-height: 44px;
     font-size: 1.4rem;
     border: none;
     outline: none;
@@ -383,9 +388,8 @@ const css = csjs`
     background-color: #109B36;
 }
 .action {
-    position: absolute;
-    right: 5px;
-    top: 5px;
+    position: relative;
+    z-index: 99;
 }
 .icon-option {
     width: 24px;
