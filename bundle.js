@@ -1325,7 +1325,7 @@ const css = csjs`
     display: grid;
     justify-items: right;
 }
-.option > button[name^="filter-option"] {
+.option > button[name="filter-option"] {
     padding: 0;
     width: 44px;
     height: 44px;
@@ -2932,7 +2932,7 @@ const css = csjs`
     border-bottom-right-radius: 8px;
 }
 .feeds {
-    margin: 10px 0 0 0;
+    margin: 0;
     padding: 0;
 }
 .feeds li {
@@ -2940,10 +2940,14 @@ const css = csjs`
     grid-template-rows: 1fr;
     grid-template-columns: 20px 52px auto;
     align-items: center;
-    padding: 8px 10px;
+    padding: 10px;
     font-size: 1.4rem;
     cursor: pointer;
     transition: background-color 0.45s ease-in-out;
+}
+.feeds li:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
 }
 .feeds li:hover {
     background-color: #F5F5F5;
