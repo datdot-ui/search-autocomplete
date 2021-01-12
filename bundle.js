@@ -2611,18 +2611,14 @@ function autocomplete ({page, flow, name, data}, protocol) {
         function handleClearSearch (name) {
             val = ''
             input.value = val
-            clear.classList.toggle(css.hide)
             optionList.forEach( item => {
                 if (item.status === 'Available' && item.active === false && item.status === 'Not available' && item.active === false) return
             })
+            clear.remove()
             list.classList.remove(css.hide)
-            setTimeout(()=> {
-                clear.classList.add(css.hide)
-                // clear.remove()
-            }, 300)
             statusElementRemove()
             removeError(controlForm)
-            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 253 })
+            send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear search', body: val, filename, line: 249 })
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'clear', body: feeds})
         }
 
@@ -2641,24 +2637,24 @@ function autocomplete ({page, flow, name, data}, protocol) {
             }
             searchFilter(val)
             recipients['swarm-key-result']({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: target.value })
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 272 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'keyup', body: val, filename, line: 268 })
         }
 
         function handleBlur (event) {
             const target = event.target
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 277 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'blur', body: target.value, filename, line: 273 })
         }
 
         function handleFocus (event) {
             const target = event.target
             if (list.classList.contains(css.hide)) list.classList.remove(css.hide)
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 283 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'focus', body: target.value, filename, line: 279 })
         }
 
         function handleChange (event) {
             const target = event.target
             val = target.value
-            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 289 })
+            return send2Parent({page, from: target.name, flow: flow ? `${flow}/${widget}` : widget, type: 'change', body: target.value, filename, line: 285 })
         }
 
         /*************************
@@ -2730,7 +2726,7 @@ const css = csjs`
 }
 .search-input {
     width: 100%;
-    font-size: 14px;
+    font-size: 1.4rem;
     border: none;
     outline: none;
     padding: 14px 0;
@@ -2773,7 +2769,6 @@ const css = csjs`
 .error {
     background-color: #FFEAE8;
 }
-
 @keyframes disppear {
     0% {
         opacity: 1;
@@ -2798,6 +2793,11 @@ const css = csjs`
     }
     100% {
         opacity: 0;
+    }
+}
+@media screen and (max-width: 414px) and (-webkit-min-device-pixel-ratio:0) {
+    .control-form button > [class*='clear'] {
+        padding: 4px;
     }
 }
 `
