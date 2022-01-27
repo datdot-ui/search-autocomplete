@@ -10,28 +10,28 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fionataeyang/datdot-ui-autocomplete.git"
+    "url": "git+https://github.com/datdotorg/datdot-ui-autocomplete.git"
   },
   "keywords": [
     "datdot ui",
     "search",
     "autocomplete"
   ],
-  "author": "fionataeyang",
+  "author": "datdotorg",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fionataeyang/datdot-ui-autocomplete/issues"
+    "url": "https://github.com/datdotorg/datdot-ui-autocomplete/issues"
   },
-  "homepage": "https://github.com/fionataeyang/datdot-ui-autocomplete#readme",
+  "homepage": "https://github.com/datdotorg/datdot-ui-autocomplete#readme",
   "dependencies": {
     "bel": "^6.0.0",
     "budo": "^11.6.4",
     "csjs-inject": "^1.0.1",
-    "datdot-ui-button": "github:fionataeyang/datdot-ui-button",
-    "datdot-ui-filter-option": "github:fionataeyang/datdot-ui-filter-option",
-    "datdot-ui-graphic": "github:fionataeyang/datdot-ui-graphic"
+    "datdot-ui-button": "github:datdotorg/datdot-ui-button",
+    "datdot-ui-filter-option": "github:datdotorg/datdot-ui-filter-option",
+    "datdot-ui-graphic": "github:datdotorg/datdot-ui-graphic"
   },
   "devDependencies": {
-    "ui-domlog": "github:fionataeyang/ui-domlog"
+    "ui-domlog": "github:datdotorg/ui-domlog"
   }
 }
