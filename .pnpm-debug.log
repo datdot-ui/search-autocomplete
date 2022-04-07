@@ -1,0 +1,160 @@
+{
+  "0 debug pnpm:scope": {
+    "selected": 1
+  },
+  "1 debug pnpm:package-manifest": {
+    "initial": {
+      "name": "datdot-ui-autocomplete",
+      "version": "0.0.0",
+      "description": "Search swarm key by autocomplete ",
+      "main": "src/index.js",
+      "scripts": {
+        "start": "budo demo/demo.js:bundle.js --open --live",
+        "build": "browserify demo/demo.js -o bundle.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git+https://github.com/datdot-ui/search-autocomplete.git"
+      },
+      "keywords": [
+        "datdot ui",
+        "search",
+        "autocomplete"
+      ],
+      "author": "datdotorg",
+      "license": "MIT",
+      "bugs": {
+        "url": "https://github.com/datdot-ui/search-autocomplete/issues"
+      },
+      "homepage": "https://github.com/datdot-ui/search-autocomplete#readme",
+      "dependencies": {
+        "bel": "^6.0.0",
+        "budo": "^11.6.4",
+        "csjs-inject": "^1.0.1",
+        "datdot-ui-button": "github:datdot-ui/button#0.0.0-alpha",
+        "datdot-ui-filter-option": "github:datdot-ui/filter#0.0.1-alpha",
+        "datdot-ui-graphic": "github:datdot-ui/icon#0.0.0-alpha"
+      },
+      "devDependencies": {
+        "ui-domlog": "github:datdotorg/ui-domlog"
+      }
+    },
+    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete"
+  },
+  "2 debug pnpm:context": {
+    "currentLockfileExists": false,
+    "storeDir": "/home/ninabreznik/.pnpm-store/v3",
+    "virtualStoreDir": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete/node_modules/.pnpm"
+  },
+  "3 debug pnpm:stage": {
+    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "stage": "resolution_started"
+  },
+  "4 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/budo/11.7.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "budo",
+      "rawSpec": "^11.6.4"
+    }
+  },
+  "5 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/budo/11.7.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "resolved"
+  },
+  "6 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/budo/11.7.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "found_in_store"
+  },
+  "7 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/csjs-inject/1.0.1",
+    "wanted": {
+      "dependentId": ".",
+      "name": "csjs-inject",
+      "rawSpec": "^1.0.1"
+    }
+  },
+  "8 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/csjs-inject/1.0.1",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "resolved"
+  },
+  "9 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/csjs-inject/1.0.1",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "found_in_store"
+  },
+  "10 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/bel/6.0.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "bel",
+      "rawSpec": "^6.0.0"
+    }
+  },
+  "11 debug pnpm:deprecation": {
+    "deprecated": "Renamed to 'nanohtml'. 'npm install nanohtml'",
+    "depth": 0,
+    "pkgId": "registry.npmjs.org/bel/6.0.0",
+    "pkgName": "bel",
+    "pkgVersion": "6.0.0",
+    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete"
+  },
+  "12 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/bel/6.0.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "resolved"
+  },
+  "13 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/bel/6.0.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "found_in_store"
+  },
+  "14 debug pnpm:_dependency_resolved": {
+    "resolution": "github.com/datdot-ui/button/5c169725186e46ec53d3cea77bbb5f7ff57237ef",
+    "wanted": {
+      "dependentId": ".",
+      "name": "datdot-ui-button",
+      "rawSpec": "github:datdot-ui/button#0.0.0-alpha"
+    }
+  },
+  "15 debug pnpm:progress": {
+    "packageId": "github.com/datdot-ui/button/5c169725186e46ec53d3cea77bbb5f7ff57237ef",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "found_in_store"
+  },
+  "16 debug pnpm:progress": {
+    "packageId": "github.com/datdot-ui/button/5c169725186e46ec53d3cea77bbb5f7ff57237ef",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "resolved"
+  },
+  "17 debug pnpm:_dependency_resolved": {
+    "resolution": "github.com/datdot-ui/icon/313fabe1e16909163c5ada7284682d07a535855f",
+    "wanted": {
+      "dependentId": ".",
+      "name": "datdot-ui-graphic",
+      "rawSpec": "github:datdot-ui/icon#0.0.0-alpha"
+    }
+  },
+  "18 debug pnpm:progress": {
+    "packageId": "github.com/datdot-ui/icon/313fabe1e16909163c5ada7284682d07a535855f",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "found_in_store"
+  },
+  "19 debug pnpm:progress": {
+    "packageId": "github.com/datdot-ui/icon/313fabe1e16909163c5ada7284682d07a535855f",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/search-autocomplete",
+    "status": "resolved"
+  },
+  "20 error pnpm": {
+    "pkgsStack": [],
+    "err": {
+      "name": "pnpm",
+      "message": "Could not resolve 0.0.1-alpha to a commit of https://github.com/datdot-ui/filter.git.",
+      "stack": "pnpm: Could not resolve 0.0.1-alpha to a commit of https://github.com/datdot-ui/filter.git.\n    at resolveRefFromRefs (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:85002:17)\n    at resolveRef (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:84996:14)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async resolveGit (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:84946:24)\n    at async Object.resolve (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:86071:241)\n    at async run (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:74166:23)"
+    }
+  }
+}

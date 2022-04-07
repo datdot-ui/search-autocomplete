@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/datdotorg/datdot-ui-autocomplete.git"
+    "url": "git+https://github.com/datdot-ui/search-autocomplete.git"
   },
   "keywords": [
     "datdot ui",
@@ -20,16 +20,16 @@
   "author": "datdotorg",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/datdotorg/datdot-ui-autocomplete/issues"
+    "url": "https://github.com/datdot-ui/search-autocomplete/issues"
   },
-  "homepage": "https://github.com/datdotorg/datdot-ui-autocomplete#readme",
+  "homepage": "https://github.com/datdot-ui/search-autocomplete#readme",
   "dependencies": {
     "bel": "^6.0.0",
     "budo": "^11.6.4",
     "csjs-inject": "^1.0.1",
-    "datdot-ui-button": "github:datdotorg/datdot-ui-button",
-    "datdot-ui-filter-option": "github:datdotorg/datdot-ui-filter-option",
-    "datdot-ui-graphic": "github:datdotorg/datdot-ui-graphic"
+    "datdot-ui-button": "github:datdot-ui/button#0.0.0-alpha",
+    "datdot-ui-filter-option": "github:datdot-ui/filter#v0.0.1-alpha",
+    "datdot-ui-graphic": "github:datdot-ui/icon#0.0.0-alpha"
   },
   "devDependencies": {
     "ui-domlog": "github:datdotorg/ui-domlog"
