@@ -27,9 +27,9 @@
     "bel": "^6.0.0",
     "budo": "^11.6.4",
     "csjs-inject": "^1.0.1",
-    "datdot-ui-button": "github:datdot-ui/button#0.0.0-alpha",
-    "datdot-ui-filter-option": "github:datdot-ui/filter#v0.0.1-alpha",
-    "datdot-ui-graphic": "github:datdot-ui/icon#0.0.0-alpha"
+    "datdot-ui-button": "github:datdot-ui/button#v0.0.0-prealpha",
+    "datdot-ui-filter-option": "github:datdot-ui/filter#v0.0.0-prealpha",
+    "datdot-ui-graphic": "github:datdot-ui/icon#v0.0.0-prealpha"
   },
   "devDependencies": {
     "ui-domlog": "github:datdotorg/ui-domlog"
