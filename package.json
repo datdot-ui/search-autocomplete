@@ -1,6 +1,6 @@
 {
   "name": "datdot-ui-autocomplete",
-  "version": "0.0.0",
+  "version": "0.0.0-prealpha",
   "description": "Search swarm key by autocomplete ",
   "main": "src/index.js",
   "scripts": {
@@ -29,9 +29,9 @@
     "csjs-inject": "^1.0.1",
     "datdot-ui-button": "github:datdot-ui/button#v0.0.0-prealpha",
     "datdot-ui-filter-option": "github:datdot-ui/filter#v0.0.0-prealpha",
-    "datdot-ui-graphic": "github:datdot-ui/icon#v0.0.0-prealpha"
+    "datdot-ui-icon": "github:datdot-ui/icon#v0.0.0-prealpha"
   },
   "devDependencies": {
-    "ui-domlog": "github:datdotorg/ui-domlog"
+    "ui-domlog": "github:datdotorg/ui-domlog#v0.0.0-prealpha"
   }
 }
